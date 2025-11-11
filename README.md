@@ -1,3 +1,54 @@
+
+# Quick start (super short)
+
+1) Open PowerShell and go to the folder that contains `manage.py`:
+
+```powershell
+cd /d D:\Projects\Django\projects\firedetection\fire_detection
+```
+
+2) Create & activate virtualenv:
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+```
+
+3) Install dependencies (try requirements file first):
+
+```powershell
+pip install -r ..\requirments.txt
+# or if missing:
+pip install "Django==5.2.7"
+```
+
+4) Set secret (required):
+
+```powershell
+$env:DJANGO_SECRET_KEY = 'pick-a-secret-for-your-machine'
+```
+
+5) Migrate, create admin, run server:
+
+```powershell
+python manage.py migrate
+python manage.py createsuperuser --email admin@example.com
+python manage.py runserver
+```
+
+6) Open these in the browser:
+
+- Register: http://127.0.0.1:8000/accounts/register/
+- Login:    http://127.0.0.1:8000/accounts/login/
+- Admin:    http://127.0.0.1:8000/admin/
+
+Notes:
+- Do NOT commit `.venv/` or `db.sqlite3`.
+- SECRET_KEY should be set via `DJANGO_SECRET_KEY` env var (we changed settings.py to read it).
+- If you already committed the secret, rotate it and remove it from the repo history.
+
+If you want, I can add a small `setup.ps1` script that runs the venv/migrate/run steps automatically.
+
 # Fire Detection System - Authentication Module
 
 ## What We Built
