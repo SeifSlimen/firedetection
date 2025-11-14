@@ -35,7 +35,7 @@
             </a>
             <div class="navbar-nav ms-auto">
                 <a href="{% url 'supervisor_dashboard' %}" class="btn btn-outline-light btn-sm">
-                    <i class="bi bi-arrow-left me-1"></i> Back to Dashboard
+                    <i class="bi bi-fire me-2"></i> Back to Dashboard
                 </a>
             </div>
         </div>
@@ -149,6 +149,11 @@
                                                 {{ agent.choice_label }}
                                             </label>
                                         </div>
+                                        {% empty %}
+                                <p class="text-muted mb-0">
+                                    <i class="bi bi-info-circle me-2"></i>
+                                    Aucun agent actif disponible pour le moment.
+                                </p>
                                     {% endfor %}
                                 </div>
                             </div>
@@ -196,6 +201,8 @@
                         </div>
                     </div>
                 </div>
+
+
 
             </div>
         </div>

@@ -17,6 +17,10 @@ class ProjectCreationForm(forms.ModelForm):
             # SUPPRIMER 'priority' et 'end_date'
         ]
         widgets = {
+            'name': forms.TextInput(attrs={
+                'placeholder': 'Enter project name',
+                'class': 'form-control col-md-6'  # Bootstrap : largeur moitié écran md+
+            }),
             'start_date': forms.DateInput(attrs={'type': 'date'}),
             'description': forms.Textarea(attrs={'rows': 4}),
         }
