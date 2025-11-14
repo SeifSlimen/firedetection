@@ -1,459 +1,241 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="utf-8">
-    <title>Add Zone - Fire Detection</title>
-    <meta content="width=device-width, initial-scale=1.0" name="viewport">
-    <meta content="Free Fire Detection Website Template" name="keywords">
-    <meta content="Free Fire Detection Website Template" name="description">
-    
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+{% extends 'base.html' %}
+{% load role_colors %}
 
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" integrity="sha256-kLaT2GOSpHechhsozzB+flnD+zUyjE2LlfWPgU04xyI=" crossorigin="">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css">
-    <style>
-        :root {
-            --primary-gradient: linear-gradient(135deg, #3b82f6 0%, #38bdf8 100%);
-            --success-gradient: linear-gradient(135deg, #10b981 0%, #34d399 100%);
-            --danger-gradient: linear-gradient(135deg, #ef4444 0%, #f87171 100%);
-            --glass-bg: rgba(255, 255, 255, 0.95);
-            --shadow-soft: 0 10px 40px rgba(0, 0, 0, 0.08);
-            --shadow-medium: 0 20px 60px rgba(0, 0, 0, 0.12);
-        }
-        
-        body {
-            min-height: 100vh;
-            background-attachment: fixed;
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            color: #0f172a;
-        }
-        
-        .hero-bar {
-            background: var(--primary-gradient);
-            color: #fff;
-            box-shadow: 0 10px 40px rgba(59, 130, 246, 0.3);
-        }
-        
-        .step-badge {
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            background: rgba(255,255,255,0.2);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 700;
-            color: #fff;
-            border: 2px solid rgba(255,255,255,0.3);
-            transition: all 0.3s ease;
-        }
-        
-        .step-badge.active {
-            background: rgba(255,255,255,0.95);
-            color: #3b82f6;
-            transform: scale(1.1);
-            box-shadow: 0 8px 20px rgba(255,255,255,0.4);
-        }
-        
-        .card-glass {
-            background: var(--glass-bg);
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(255,255,255,0.3);
-            box-shadow: var(--shadow-medium);
-            border-radius: 24px;
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-        }
-        
-        .card-glass:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 25px 70px rgba(0, 0, 0, 0.15);
-        }
-        
-        #map {
-            height: 500px;
-            border-radius: 20px;
-            border: 2px solid rgba(59, 130, 246, 0.2);
-            box-shadow: inset 0 0 0 1px rgba(15,23,42,0.08);
-            transition: border-color 0.3s ease;
-        }
-        
-        #map:hover {
-            border-color: rgba(59, 130, 246, 0.4);
-        }
-        
-        .btn-gradient {
-            background: var(--primary-gradient);
-            border: none;
-            color: white;
-            font-weight: 600;
-            border-radius: 12px;
-            padding: 0.875rem 2rem;
-            box-shadow: 0 8px 25px rgba(59, 130, 246, 0.4);
-            transition: all 0.3s ease;
-        }
-        
-        .btn-gradient:hover:not(:disabled) {
-            transform: translateY(-2px);
-            box-shadow: 0 12px 35px rgba(59, 130, 246, 0.5);
-            color: white;
-        }
-        
-        .btn-gradient:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-        }
-        
-        .btn-success-gradient {
-            background: var(--success-gradient);
-            border: none;
-            color: white;
-            font-weight: 600;
-            border-radius: 12px;
-            padding: 0.875rem 2rem;
-            box-shadow: 0 8px 25px rgba(16, 185, 129, 0.4);
-            transition: all 0.3s ease;
-        }
-        
-        .btn-success-gradient:hover:not(:disabled) {
-            transform: translateY(-2px);
-            box-shadow: 0 12px 35px rgba(16, 185, 129, 0.5);
-            color: white;
-        }
-        
-        .btn-outline-custom {
-            border: 2px solid #3b82f6;
-            color: #3b82f6;
-            background: white;
-            border-radius: 12px;
-            padding: 0.875rem 2rem;
-            font-weight: 600;
-            transition: all 0.3s ease;
-        }
-        
-        .btn-outline-custom:hover {
-            background: #3b82f6;
-            color: white;
-            transform: translateY(-2px);
-        }
-        
-        .alert-modern {
-            border-radius: 18px;
-            border: none;
-            backdrop-filter: blur(10px);
-            animation: slideDown 0.5s ease;
-        }
-        
-        @keyframes slideDown {
-            from {
-                opacity: 0;
-                transform: translateY(-20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-        
-        .field-label {
-            font-weight: 700;
-            font-size: 0.85rem;
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-            color: #475569;
-            margin-bottom: 0.75rem;
-            display: block;
-        }
-        
-        .form-control,
-        textarea {
-            border-radius: 12px;
-            border: 2px solid rgba(59, 130, 246, 0.2);
-            padding: 0.875rem 1.25rem;
-            transition: all 0.3s ease;
-            background: rgba(255, 255, 255, 0.9);
-        }
-        
-        .form-control:focus,
-        textarea:focus {
-            border-color: #3b82f6;
-            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
-            background: white;
-            outline: none;
-        }
-        
-        .zone-list {
-            max-height: 300px;
-            overflow-y: auto;
-        }
-        
-        .zone-item {
-            background: white;
-            border-radius: 12px;
-            padding: 1rem;
-            margin-bottom: 0.75rem;
-            border: 2px solid rgba(59, 130, 246, 0.1);
-            transition: all 0.3s ease;
-            cursor: pointer;
-        }
-        
-        .zone-item:hover {
-            border-color: #3b82f6;
-            transform: translateX(5px);
-            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.2);
-        }
-        
-        .zone-info {
-            font-size: 0.875rem;
-            color: #64748b;
-        }
-        
-        .area-display {
-            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
-            border-radius: 12px;
-            padding: 1rem;
-            margin-top: 1rem;
-            border: 2px solid rgba(59, 130, 246, 0.2);
-        }
-        
-        .spinner-border-sm {
-            width: 1rem;
-            height: 1rem;
-            border-width: 0.15em;
-        }
-        
-        .loading-overlay {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.5);
-            backdrop-filter: blur(5px);
-            z-index: 9999;
-            align-items: center;
-            justify-content: center;
-        }
-        
-        .loading-overlay.active {
-            display: flex;
-        }
-        
-        .loading-content {
-            background: white;
-            padding: 2rem;
-            border-radius: 20px;
-            text-align: center;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-        }
-    </style>
-</head>
-<body>
-    
-    <header class="hero-bar py-3">
-        <div class="container">
+{% block title %}Add Zone - Fire Detection{% endblock %}
+
+{% block navbar_brand_url %}{% url 'supervisor_dashboard' %}{% endblock %}
+
+{% block navbar_content %}
+<ul class="navbar-nav me-auto">
+    <li class="nav-item">
+        <a class="nav-link" href="{% url 'supervisor_dashboard' %}">
+            <i class="bi bi-speedometer2"></i> Dashboard
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" href="{% url 'projects:project_list' %}">
+            <i class="bi bi-folder"></i> Projects
+        </a>
+    </li>
+</ul>
+{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" integrity="sha256-kLaT2GOSpHechhsozzB+flnD+zUyjE2LlfWPgU04xyI=" crossorigin="">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css">
+<style>
+    #map {
+        height: 500px;
+        border-radius: 12px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Header -->
+    <div class="card border-0 {% get_role_bg user %} text-white mb-4 shadow-lg">
+        <div class="card-body py-4">
             <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-4">
                 <div>
-                    <p class="display-5 fw-bold mb-0">Define Surveillance Zones</p>
-                    <p class="mb-0 mt-3 lead">Draw the zones to be covered for your project with precision.</p>
+                    <h1 class="h2 mb-2">Define Surveillance Zones</h1>
+                    <p class="mb-0 lead">Draw the zones to be covered for your project with precision.</p>
                 </div>
                 <div class="d-flex gap-3">
-                    <div class="step-badge">1</div>
-                    <div class="step-badge active">2</div>
-                    <div class="step-badge">3</div>
+                    <div class="badge bg-white text-dark rounded-circle d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">1</div>
+                    <div class="badge bg-white {% get_role_text user %} rounded-circle d-flex align-items-center justify-content-center fw-bold" style="width: 50px; height: 50px;">2</div>
+                    <div class="badge bg-white text-dark rounded-circle d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">3</div>
                 </div>
             </div>
         </div>
-    </header>
+    </div>
 
-    <main class="container py-5">
-        {% if messages %}
-            <div class="col-lg-6 mx-auto mb-4">
-                <div class="alert alert-success alert-modern alert-dismissible fade show text-center" role="alert">
-                    {% for message in messages %}
-                        {{ message }}
-                    {% endfor %}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                </div>
+    {% if messages %}
+        <div class="col-lg-6 mx-auto mb-4">
+            {% for message in messages %}
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
             </div>
-        {% endif %}
+            {% endfor %}
+        </div>
+    {% endif %}
 
-        <form method="post" enctype="multipart/form-data">
-            {% csrf_token %}
-            <div class="row g-4">
-                <div class="col-lg-5">
-                    <div class="card card-glass rounded-4 p-4 h-100">
-                        <br><br><br>
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div class="row g-4">
+            <div class="col-lg-5">
+                <div class="card shadow-lg border-0 h-100">
+                    <div class="card-body p-4">
                         <div class="d-flex align-items-center gap-3 mb-4">
-                            <span class="badge bg-primary-subtle text-primary-emphasis rounded-pill px-3 py-2">
-                                <i class="bi bi-diagram-3 me-2" style="color: black; font-size: 1.5rem;"></i>
-                                    <span style="color: black; font-size: 1.5rem;">Project: <span class="fw-semibold text-secondary">{{ votre_projet }}</span></span>
+                            <span class="badge {% get_role_badge user %} rounded-pill px-3 py-2 fs-6">
+                                <i class="bi bi-diagram-3 me-2"></i>
+                                Project: <span class="fw-semibold">{{ votre_projet }}</span>
                             </span>
                         </div>
 
                         <div class="mb-4">
-                            <label class="field-label mb-2" for="name_zone">Zone Name</label>
-                            <input type="text" id="name_zone" class="form-control form-control-lg rounded-3"
+                            <label class="form-label fw-semibold text-uppercase small text-muted mb-2" for="name_zone">Zone Name</label>
+                            <input type="text" id="name_zone" class="form-control form-control-lg"
                                    placeholder="e.g. East Zone" name="name_zone" autocomplete="off">
                         </div>
 
                         <input type="text" id="coords_polys" class="form-control" name="coords_polys" hidden>
 
                         <div class="mb-4">
-                            <label class="field-label mb-2" for="description">Description</label>
-                            <textarea class="form-control rounded-3" placeholder="Detail the characteristics of the zone"
+                            <label class="form-label fw-semibold text-uppercase small text-muted mb-2" for="description">Description</label>
+                            <textarea class="form-control" placeholder="Detail the characteristics of the zone"
                                       id="description" name="description" rows="5"></textarea>
                         </div>
 
                         <div class="d-flex flex-column flex-md-row gap-3">
-                            <button class="btn btn-gradient text-white rounded-pill px-4 py-3 fw-semibold" type="submit" value="false" name="ajoutez_un_polygone">
+                            <button class="btn btn-outline-secondary rounded-pill px-4 py-3 fw-semibold" type="submit" value="false" name="ajoutez_un_polygone">
                                 <i class="bi bi-plus-circle me-2"></i> Add Another Zone
                             </button>
-                            <button class="btn btn-success-gradient border-0 shadow-sm rounded-pill px-4 py-3 fw-semibold text-uppercase" type="submit">
+                            <button class="btn {% get_role_btn user %} rounded-pill px-4 py-3 fw-semibold text-uppercase" type="submit">
                                 Next Step
                                 <i class="bi bi-arrow-right-circle ms-2"></i>
                             </button>
                         </div>
                     </div>
                 </div>
+            </div>
 
             <div class="col-lg-7">
-                <div class="card card-glass rounded-4 p-4 h-100">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <h2 class="h5 fw-semibold mb-0">
-                            <i class="bi bi-map me-2"></i>Dessiner sur la carte
-                        </h2>
-                        <span class="badge bg-primary-subtle text-primary-emphasis rounded-pill">
-                            <i class="bi bi-geo-alt-fill me-1"></i>
-                            Leaflet Draw
-                        </span>
+                <div class="card shadow-lg border-0 h-100">
+                    <div class="card-body p-4">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h2 class="h5 fw-semibold mb-0">
+                                <i class="bi bi-map me-2"></i>Draw on Map
+                            </h2>
+                            <span class="badge {% get_role_badge user %} rounded-pill">
+                                <i class="bi bi-geo-alt-fill me-1"></i>
+                                Leaflet Draw
+                            </span>
+                        </div>
+                        <div class="alert alert-info mb-3" role="alert">
+                            <i class="bi bi-info-circle me-2"></i>
+                            <strong>Instructions:</strong> Use the polygon tool (<i class="bi bi-pentagon"></i>) to draw a zone. You can modify or delete the polygon.
+                        </div>
+                        <div id="map" class="w-100"></div>
                     </div>
-                    <div class="alert alert-info alert-modern mb-3" role="alert">
-                        <i class="bi bi-info-circle me-2"></i>
-                        <strong>Instructions:</strong> Use the polygon tool (<i class="bi bi-pentagon"></i>) to draw a zone. You can modify or delete the polygon.
-                    </div>
-                    <div id="map" class="w-100"></div>
                 </div>
             </div>
-            </div>
-        </form>
-    </main>
+        </div>
+    </form>
+</div>
+{% endblock %}
 
-    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js" integrity="sha256-WBkoXOwTeyKclOHuWtc+i2uENFpDZ9YPdf5Hf+D7ewM=" crossorigin=""></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css">
-    <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
-    
-    <script>
+{% block extra_scripts %}
+<script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js" integrity="sha256-WBkoXOwTeyKclOHuWtc+i2uENFpDZ9YPdf5Hf+D7ewM=" crossorigin=""></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
+<script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
 
-        const map = L.map("map").setView([36.89186227222111, 10.187473488849253], 13);
+<script>
+    const map = L.map("map").setView([36.89186227222111, 10.187473488849253], 13);
 
-        L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", {
-            attribution: "Leaflet Map ©",
-        }).addTo(map);
+    L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", {
+        attribution: "Leaflet Map ©",
+    }).addTo(map);
 
-        var geocoder = L.Control.geocoder({
-            defaultMarkGeocode: false,
-            placeholder: "Rechercher des localisations",
-            errorMessage: "Non Trouvé"
-        }).on('markgeocode', function (e) {
-            var bbox = e.geocode.bbox;
-            var poly = L.polygon([
-                bbox.getSouthEast(),
-                bbox.getNorthEast(),
-                bbox.getNorthWest(),
-                bbox.getSouthWest()
-            ]);
-            map.fitBounds(poly.getBounds(), {
-                maxZoom: 16
-            });
-        }).addTo(map);
-
-        var drawnItems = new L.FeatureGroup();
-        map.addLayer(drawnItems);
-
-        var drawControl = new L.Control.Draw({
-            draw: {
-                polygon: {
-                    shapeOptions: {
-                        color: "green",
-                    },
-                },
-                polyline: false,
-                rectangle: false,
-                circle: false,
-                marker: false,
-                circlemarker: false,
-            },
-            edit: {
-                featureGroup: drawnItems,
-                remove: true,
-            },
+    var geocoder = L.Control.geocoder({
+        defaultMarkGeocode: false,
+        placeholder: "Rechercher des localisations",
+        errorMessage: "Non Trouvé"
+    }).on('markgeocode', function (e) {
+        var bbox = e.geocode.bbox;
+        var poly = L.polygon([
+            bbox.getSouthEast(),
+            bbox.getNorthEast(),
+            bbox.getNorthWest(),
+            bbox.getSouthWest()
+        ]);
+        map.fitBounds(poly.getBounds(), {
+            maxZoom: 16
         });
+    }).addTo(map);
 
-        map.addControl(drawControl);
+    var drawnItems = new L.FeatureGroup();
+    map.addLayer(drawnItems);
 
-        function updatePolygonCoordinates(layer) {
-            var myjson = layer.toGeoJSON();
-            let coords = myjson.features[0].geometry.coordinates;
-            const multiPolygon = {
-                type: "MultiPolygon",
-                coordinates: [coords],
-            };
-            document.getElementById("coords_polys").value = JSON.stringify(multiPolygon);
+    var drawControl = new L.Control.Draw({
+        draw: {
+            polygon: {
+                shapeOptions: {
+                    color: "#198754",
+                },
+            },
+            polyline: false,
+            rectangle: false,
+            circle: false,
+            marker: false,
+            circlemarker: false,
+        },
+        edit: {
+            featureGroup: drawnItems,
+            remove: true,
+        },
+    });
+
+    map.addControl(drawControl);
+
+    function updatePolygonCoordinates(layer) {
+        var myjson = layer.toGeoJSON();
+        let coords = myjson.features[0].geometry.coordinates;
+        const multiPolygon = {
+            type: "MultiPolygon",
+            coordinates: [coords],
+        };
+        document.getElementById("coords_polys").value = JSON.stringify(multiPolygon);
+    }
+
+    map.on("draw:created", function (e) {
+        var type = e.layerType, layer = e.layer;
+        if (type === "polygon") {
+            if(drawnItems.getLayers().length === 0) {
+                drawnItems.addLayer(layer);
+                updatePolygonCoordinates(drawnItems);
+            } else {
+                alert("Seul un polygone à la fois peut être dessiné !");
+            }
         }
+    });
 
-        map.on("draw:created", function (e) {
-            var type = e.layerType, layer = e.layer;
-            if (type === "polygon") {
-                // Verify if there is already a polygon
-                if(drawnItems.getLayers().length === 0) { // Check if the drawnItems group is empty
-                    drawnItems.addLayer(layer);
-                    updatePolygonCoordinates(drawnItems); // Update polygon coordinates
-                } else {
-                    alert("Seul un polygone à la fois peut être dessiné !");
-                }
+    map.on("draw:edited", function (e) {
+        var layers = e.layers;
+        layers.eachLayer(function (layer) {
+            if (layer instanceof L.Polygon) {
+                updatePolygonCoordinates(drawnItems);
             }
         });
+    });
 
-        map.on("draw:edited", function (e) {
-            var layers = e.layers;
-            layers.eachLayer(function (layer) {
-                if (layer instanceof L.Polygon) {
-                    updatePolygonCoordinates(drawnItems); // Update polygon coordinates upon edit
-                }
-            });
+    map.on("draw:deleted", function(e) {
+        var layers = e.layers;
+        layers.eachLayer(function(layer) {
+            if (layer instanceof L.Polygon) {
+                document.getElementById("coords_polys").value = "";
+                document.getElementById("name_zone").value = "";
+                document.getElementById("description").value = "";
+            }
         });
+    });
 
-        map.on("draw:deleted", function(e) {
-            var layers = e.layers;
-            layers.eachLayer(function(layer) {
-                if (layer instanceof L.Polygon) {
-                    document.getElementById("coords_polys").value = "";
-                    document.getElementById("name_zone").value = "";
-                    document.getElementById("description").value = "";
-                }
-            });
-        });
-
-        // Ajout des zones existantes sur la carte
-        {% for zone_data in zones_data %}
-            {% if zone_data.coords_json != 'null' %}
-            (function() {
-                try {
-                    const geojson = {{ zone_data.coords_json|safe }};
-                    const polygonLayer = L.geoJSON(geojson).addTo(map);
-                    const tooltipContent = "<b>{{ zone_data.zone.name_zone|escapejs }}</b><br>{{ zone_data.zone.description_zone|default:""|escapejs }}";
-                    polygonLayer.bindTooltip(tooltipContent, { permanent: true, direction: 'center' }).openTooltip();
-                } catch(e) {
-                    console.error('Error loading zone:', e);
-                }
-            })();
-            {% endif %}
-        {% endfor %}
-    </script>
-</body>
-</html> 
+    // Add existing zones on the map
+    {% for zone_data in zones_data %}
+        {% if zone_data.coords_json != 'null' %}
+        (function() {
+            try {
+                const geojson = {{ zone_data.coords_json|safe }};
+                const polygonLayer = L.geoJSON(geojson).addTo(map);
+                const tooltipContent = "<b>{{ zone_data.zone.name_zone|escapejs }}</b><br>{{ zone_data.zone.description_zone|default:""|escapejs }}";
+                polygonLayer.bindTooltip(tooltipContent, { permanent: true, direction: 'center' }).openTooltip();
+            } catch(e) {
+                console.error('Error loading zone:', e);
+            }
+        })();
+        {% endif %}
+    {% endfor %}
+</script>
+{% endblock %}

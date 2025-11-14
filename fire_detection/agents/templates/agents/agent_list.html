@@ -1,100 +1,267 @@
-<!doctype html>
-<html>
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Agent List - Supervisor</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css" rel="stylesheet">
-</head>
-<body>
-    <nav class="navbar navbar-expand-lg navbar-dark bg-success">
-        <div class="container">
-            <a class="navbar-brand" href="{% url 'supervisor_dashboard' %}">
-                <i class="bi bi-fire"></i> Fire Detection
-            </a>
-            <div class="navbar-nav ms-auto">
-                <a href="{% url 'agents:add_agent' %}" class="btn btn-outline-light me-2">
-                    <i class="bi bi-person-plus"></i> Add Agent
-                </a>
-                <a href="{% url 'supervisor_dashboard' %}" class="btn btn-outline-light">
-                    <i class="bi bi-speedometer2"></i> Dashboard
+{% extends 'base.html' %}
+{% load role_colors %}
+
+{% block title %}Agent List - Fire Detection System{% endblock %}
+
+{% block navbar_brand_url %}{% url 'supervisor_dashboard' %}{% endblock %}
+
+{% block navbar_content %}
+<ul class="navbar-nav me-auto">
+    <li class="nav-item">
+        <a class="nav-link" href="{% url 'agents:add_agent' %}">
+            <i class="bi bi-person-plus"></i> Add Agent
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" href="{% url 'supervisor_dashboard' %}">
+            <i class="bi bi-speedometer2"></i> Dashboard
+        </a>
+    </li>
+</ul>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Page Header -->
+    <div class="card shadow-lg border-0 mb-4">
+        <div class="card-body p-4">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+                <div>
+                    <h1 class="h2 mb-2 {% get_role_text user %}">
+                        <i class="bi bi-people-fill"></i> Security Agents
+                    </h1>
+                    <p class="text-muted mb-0">Manage and monitor all security agents in the system</p>
+                </div>
+                <a href="{% url 'agents:add_agent' %}" class="btn {% get_role_btn user %} btn-lg">
+                    <i class="bi bi-person-plus"></i> Add New Agent
                 </a>
             </div>
         </div>
-    </nav>
+    </div>
 
-    <div class="container mt-4">
-        <div class="row">
-            <div class="col-12">
-                <div class="card shadow-sm">
-                    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-                        <h4 class="mb-0">
-                            <i class="bi bi-people"></i> Security Agents List
-                        </h4>
-                        <span class="badge bg-light text-dark">{{ agents.count }} agents</span>
+    <!-- Statistics Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="text-muted mb-1 small">Total Agents</p>
+                            <h2 class="h3 mb-0 text-primary">{{ total_agents }}</h2>
+                        </div>
+                        <div class="text-primary">
+                            <i class="bi bi-people fs-1"></i>
+                        </div>
                     </div>
-                    <div class="card-body">
-                        {% if messages %}
-                            {% for message in messages %}
-                                <div class="alert alert-{{ message.tags }} alert-dismissible fade show">
-                                    {{ message }}
-                                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                                </div>
-                            {% endfor %}
-                        {% endif %}
-
-                        {% if agents %}
-                        <div class="table-responsive">
-                          <table class="table table-striped table-hover">
-    <thead class="table-dark">
-        <tr>
-            <th>#</th>
-            <th><i class="bi bi-person"></i> Agent</th>
-            <th><i class="bi bi-telephone"></i> Phone</th>
-            <th><i class="bi bi-geo-alt"></i> Address</th>
-            <th><i class="bi bi-calendar"></i> Hire Date</th>
-            <th><i class="bi bi-gear"></i> Actions</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for agent in agents %}
-        <tr>
-            <td>{{ forloop.counter }}</td>
-            <td>
-                <strong>{{ agent.email }}</strong><br>
-                <small class="text-muted">
-                    {{ agent.first_name }} {{ agent.last_name }}
-                </small>
-            </td>
-            <td>
-                {% if agent.agentprofile.phone_number %}
-                    {{ agent.agentprofile.phone_number }}
-                {% else %}
-                    <span class="text-muted">Not set</span>
-                {% endif %}
-            </td>
-            <td>
-                {% if agent.agentprofile.address %}
-                    <small>{{ agent.agentprofile.address|truncatewords:5 }}</small>
-                {% else %}
-                    <span class="text-muted">Not set</span>
-                {% endif %}
-            </td>
-            <td>
-                <small class="text-muted">
-                    {{ agent.agentprofile.hire_date|date:"M d, Y" }}
-                </small>
-            </td>
-            <td>
-                <div class="btn-group btn-group-sm">
-                    <button class="btn btn-outline-primary" title="View Details">
-                        <i class="bi bi-eye"></i>
-                    </button>
-                    <button class="btn btn-outline-warning" title="Edit">
-                        <i class="bi bi-pencil"></i>
-                    </button>
                 </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="text-muted mb-1 small">Active Accounts</p>
+                            <h2 class="h3 mb-0 text-success">{{ active_accounts }}</h2>
+                        </div>
+                        <div class="text-success">
+                            <i class="bi bi-check-circle fs-1"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="text-muted mb-1 small">Active Profiles</p>
+                            <h2 class="h3 mb-0 text-info">{{ active_profiles }}</h2>
+                        </div>
+                        <div class="text-info">
+                            <i class="bi bi-person-check fs-1"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="text-muted mb-1 small">Inactive</p>
+                            <h2 class="h3 mb-0 text-warning">{{ inactive_count }}</h2>
+                        </div>
+                        <div class="text-warning">
+                            <i class="bi bi-exclamation-circle fs-1"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Agents Table -->
+    <div class="card shadow-lg border-0">
+        <div class="card-header {% get_role_bg user %} text-white">
+            <div class="d-flex justify-content-between align-items-center">
+                <h4 class="mb-0">
+                    <i class="bi bi-list-ul"></i> All Agents
+                </h4>
+                <span class="badge bg-light text-dark fs-6">{{ total_agents }} agents</span>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            {% if agents %}
+            <div class="table-responsive">
+                <table class="table table-striped table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="px-4 py-3"><i class="bi bi-person"></i> Agent</th>
+                            <th class="px-4 py-3"><i class="bi bi-telephone"></i> Contact</th>
+                            <th class="px-4 py-3"><i class="bi bi-geo-alt"></i> Address</th>
+                            <th class="px-4 py-3"><i class="bi bi-calendar-event"></i> Hire Date</th>
+                            <th class="px-4 py-3"><i class="bi bi-shield-check"></i> Account Status</th>
+                            <th class="px-4 py-3"><i class="bi bi-person-badge"></i> Profile Status</th>
+                            <th class="px-4 py-3"><i class="bi bi-gear"></i> Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for agent in agents %}
+                        <tr>
+                            <!-- Agent Info -->
+                            <td class="px-4 py-3">
+                                <div class="d-flex align-items-center gap-3">
+                                    <div class="rounded {% get_role_bg user %} text-white d-flex align-items-center justify-content-center" style="width: 50px; height: 50px; font-weight: 700; font-size: 1.1rem;">
+                                        {{ agent.first_name|first|default:agent.email|first|upper }}{{ agent.last_name|first|default:""|upper }}
+                                    </div>
+                                    <div>
+                                        <div class="fw-semibold">
+                                            {% if agent.first_name or agent.last_name %}
+                                                {{ agent.first_name }} {{ agent.last_name }}
+                                            {% else %}
+                                                <span class="text-muted">No name set</span>
+                                            {% endif %}
+                                        </div>
+                                        <div class="text-muted small">
+                                            <i class="bi bi-envelope"></i> {{ agent.email }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                            
+                            <!-- Contact Info -->
+                            <td class="px-4 py-3">
+                                {% if agent.agentprofile and agent.agentprofile.phone_number %}
+                                    <div class="d-flex align-items-center gap-2">
+                                        <i class="bi bi-telephone-fill text-primary"></i>
+                                        <span>{{ agent.agentprofile.phone_number }}</span>
+                                    </div>
+                                {% else %}
+                                    <span class="text-muted">
+                                        <i class="bi bi-dash-circle"></i> Not provided
+                                    </span>
+                                {% endif %}
+                            </td>
+                            
+                            <!-- Address -->
+                            <td class="px-4 py-3">
+                                {% if agent.agentprofile and agent.agentprofile.address %}
+                                    <div class="d-flex align-items-center gap-2">
+                                        <i class="bi bi-geo-alt-fill text-primary"></i>
+                                        <span class="small">{{ agent.agentprofile.address|truncatewords:8 }}</span>
+                                    </div>
+                                {% else %}
+                                    <span class="text-muted">
+                                        <i class="bi bi-dash-circle"></i> Not provided
+                                    </span>
+                                {% endif %}
+                            </td>
+                            
+                            <!-- Hire Date -->
+                            <td class="px-4 py-3">
+                                {% if agent.agentprofile %}
+                                    <div class="d-flex align-items-center gap-2 mb-1">
+                                        <i class="bi bi-calendar-check text-primary"></i>
+                                        <span>{{ agent.agentprofile.hire_date|date:"M d, Y" }}</span>
+                                    </div>
+                                    <small class="text-muted">
+                                        {{ agent.agentprofile.hire_date|timesince }} ago
+                                    </small>
+                                {% else %}
+                                    <span class="text-muted">
+                                        <i class="bi bi-dash-circle"></i> No profile
+                                    </span>
+                                {% endif %}
+                            </td>
+                            
+                            <!-- Account Activation Status -->
+                            <td class="px-4 py-3">
+                                {% if agent.is_active %}
+                                    <span class="badge bg-success">
+                                        <i class="bi bi-check-circle-fill"></i> Activated
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-secondary">
+                                        <i class="bi bi-x-circle-fill"></i> Not Activated
+                                    </span>
+                                {% endif %}
+                            </td>
+                            
+                            <!-- Profile Status -->
+                            <td class="px-4 py-3">
+                                {% if agent.agentprofile %}
+                                    {% if agent.agentprofile.is_active %}
+                                        <span class="badge bg-info">
+                                            <i class="bi bi-person-check-fill"></i> Active
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-warning text-dark">
+                                            <i class="bi bi-person-x-fill"></i> Inactive
+                                        </span>
+                                    {% endif %}
+                                {% else %}
+                                    <span class="badge bg-secondary">
+                                        <i class="bi bi-exclamation-triangle-fill"></i> No Profile
+                                    </span>
+                                {% endif %}
+                            </td>
+                            
+                            <!-- Actions -->
+                            <td class="px-4 py-3">
+                                <div class="btn-group" role="group">
+                                    <button class="btn btn-info btn-sm" title="View Details">
+                                        <i class="bi bi-eye"></i>
+                                    </button>
+                                    <button class="btn btn-warning btn-sm text-dark" title="Edit Agent">
+                                        <i class="bi bi-pencil"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <div class="mb-3">
+                    <i class="bi bi-people display-1 {% get_role_text user %}"></i>
+                </div>
+                <h3 class="text-muted">No Agents Found</h3>
+                <p class="text-muted mb-4">There are no security agents in the system yet.</p>
+                <a href="{% url 'agents:add_agent' %}" class="btn {% get_role_btn user %} btn-lg">
+                    <i class="bi bi-person-plus"></i> Add Your First Agent
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
             </td>
         </tr>
         {% endfor %}
@@ -102,21 +269,25 @@
 </table>
                         </div>
                         {% else %}
-                        <div class="text-center py-5">
-                            <i class="bi bi-people display-1 text-muted"></i>
+
+                <div class="empty-state">
+                    <div class="empty-state-icon">
+                        <i class="bi bi-people"></i>
+                    </div>
                             <h3 class="text-muted mt-3">No Agents Found</h3>
-                            <p class="text-muted">There are no security agents in the system yet.</p>
-                            <a href="{% url 'agents:add_agent' %}" class="btn btn-success btn-lg">
+
+                    <p class="text-muted mb-4">There are no security agents in the system yet.</p>
+                    <a href="{% url 'agents:add_agent' %}" class="btn btn-primary-modern">
                                 <i class="bi bi-person-plus"></i> Add Your First Agent
                             </a>
                         </div>
                         {% endif %}
-                    </div>
-                </div>
             </div>
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
+
 </html>

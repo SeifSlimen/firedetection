@@ -48,4 +48,18 @@ def agent_list(request):
         user_type=CustomUser.USER_TYPE_AGENT
     ).select_related('agentprofile')
     
-    return render(request, 'agents/agent_list.html', {'agents': agents})
+    # Calculate statistics
+    total_agents = agents.count()
+    active_accounts = agents.filter(is_active=True).count()
+    active_profiles = sum(1 for agent in agents if hasattr(agent, 'agentprofile') and agent.agentprofile and agent.agentprofile.is_active)
+    inactive_count = total_agents - active_accounts
+    
+    context = {
+        'agents': agents,
+        'total_agents': total_agents,
+        'active_accounts': active_accounts,
+        'active_profiles': active_profiles,
+        'inactive_count': inactive_count,
+    }
+    
+    return render(request, 'agents/agent_list.html', context)

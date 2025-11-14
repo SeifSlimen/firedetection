@@ -1,179 +1,188 @@
-{% load static %}
-<!doctype html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Register</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css" rel="stylesheet">
-  <style>
+{% extends 'base.html' %}
+
+{% block title %}Register - Fire Detection System{% endblock %}
+
+{% block navbar_brand_url %}{% url 'register' %}{% endblock %}
+
+{% block navbar_content %}
+<ul class="navbar-nav ms-auto">
+    <li class="nav-item">
+        <a class="nav-link" href="{% url 'login' %}">
+            <i class="bi bi-box-arrow-in-right"></i> Login
+        </a>
+    </li>
+</ul>
+{% endblock %}
+
+{% block main_class %}bg-light min-vh-100 d-flex align-items-center{% endblock %}
+
+{% block extra_head %}
+<style>
     .password-strength-meter {
-      height: 5px;
-      background: #ddd;
-      border-radius: 3px;
-      margin-top: 5px;
+        height: 5px;
+        background: #dee2e6;
+        border-radius: 3px;
+        margin-top: 5px;
     }
     .password-strength-meter div {
-      height: 5px;
-      border-radius: 3px;
-      transition: width 0.5s ease;
+        height: 5px;
+        border-radius: 3px;
+        transition: width 0.5s ease;
     }
-    .strength-weak { background: #f44336; }
-    .strength-fair { background: #ffa726; }
-    .strength-good { background: #fdd835; }
-    .strength-strong { background: #66bb6a; }
-  </style>
-<body class="bg-light">
-  <div class="container">
-    <div class="row justify-content-center mt-5">
-      <div class="col-md-6 col-lg-4">
-        <div class="card shadow">
-          <div class="card-body">
-            <h2 class="card-title text-center mb-4">Register</h2>
-            
-            {% if messages %}
-              {% for message in messages %}
-                <div class="alert alert-{{ message.tags }}">
-                  {{ message }}
+    .strength-weak { background: #dc3545; }
+    .strength-fair { background: #ffc107; }
+    .strength-good { background: #0dcaf0; }
+    .strength-strong { background: #198754; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-5">
+            <div class="card shadow-lg border-0">
+                <div class="card-body p-4">
+                    <h2 class="card-title text-center mb-4">
+                        <i class="bi bi-person-plus text-primary"></i> Register
+                    </h2>
+
+                    <form method="post">
+                        {% csrf_token %}
+                        {% if form.non_field_errors %}
+                            <div class="alert alert-danger">
+                                {{ form.non_field_errors }}
+                            </div>
+                        {% endif %}
+                        
+                        <div class="mb-3">
+                            {{ form.email.label_tag }}
+                            <input type="email" name="email" class="form-control" id="{{ form.email.id_for_label }}" {% if form.email.value %}value="{{ form.email.value }}"{% endif %}>
+                            {% if form.email.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.email.errors }}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.password1.label_tag }}
+                            <div class="input-group">
+                                <input type="password" name="password1" class="form-control" id="{{ form.password1.id_for_label }}" onkeyup="checkPasswordStrength(this.value)">
+                                <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('{{ form.password1.id_for_label }}')">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                            </div>
+                            <div class="password-strength-meter">
+                                <div id="strength-meter"></div>
+                            </div>
+                            <small id="password-strength-text" class="form-text text-muted"></small>
+                            {% if form.password1.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.password1.errors }}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.password2.label_tag }}
+                            <div class="input-group">
+                                <input type="password" name="password2" class="form-control" id="{{ form.password2.id_for_label }}">
+                                <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('{{ form.password2.id_for_label }}')">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                            </div>
+                            {% if form.password2.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.password2.errors }}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.user_type.label_tag }}
+                            <select name="user_type" class="form-select" id="{{ form.user_type.id_for_label }}">
+                                {% for value, label in form.user_type.field.choices %}
+                                    <option value="{{ value }}" {% if form.user_type.value == value %}selected{% endif %}>{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                            {% if form.user_type.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.user_type.errors }}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary btn-lg" id="submit-btn" onclick="this.form.classList.add('was-validated'); this.innerHTML='<span class=\'spinner-border spinner-border-sm\'></span> Registering...'">
+                                <i class="bi bi-person-plus"></i> Register
+                            </button>
+                        </div>
+                    </form>
+
+                    <hr class="my-4">
+                    <div class="text-center">
+                        <a href="{% url 'login' %}" class="text-decoration-none">
+                            <i class="bi bi-box-arrow-in-right"></i> Already have an account? Login
+                        </a>
+                    </div>
                 </div>
-              {% endfor %}
-            {% endif %}
-
-            <form method="post">
-              {% csrf_token %}
-              {% if form.non_field_errors %}
-                <div class="alert alert-danger">
-                  {{ form.non_field_errors }}
-                </div>
-              {% endif %}
-              
-              <div class="mb-3">
-                {{ form.email.label_tag }}
-                <input type="email" name="email" class="form-control" id="{{ form.email.id_for_label }}" {% if form.email.value %}value="{{ form.email.value }}"{% endif %}>
-                {% if form.email.errors %}
-                  <div class="invalid-feedback d-block">
-                    {{ form.email.errors }}
-                  </div>
-                {% endif %}
-              </div>
-
-              <div class="mb-3">
-                {{ form.password1.label_tag }}
-                <div class="input-group">
-                  <input type="password" name="password1" class="form-control" id="{{ form.password1.id_for_label }}" onkeyup="checkPasswordStrength(this.value)">
-                  <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('{{ form.password1.id_for_label }}')">
-                    <i class="bi bi-eye"></i>
-                  </button>
-                </div>
-                <div class="password-strength-meter">
-                  <div id="strength-meter"></div>
-                </div>
-                <small id="password-strength-text" class="form-text"></small>
-                {% if form.password1.errors %}
-                  <div class="invalid-feedback d-block">
-                    {{ form.password1.errors }}
-                  </div>
-                {% endif %}
-              </div>
-
-              <div class="mb-3">
-                {{ form.password2.label_tag }}
-                <div class="input-group">
-                  <input type="password" name="password2" class="form-control" id="{{ form.password2.id_for_label }}">
-                  <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('{{ form.password2.id_for_label }}')">
-                    <i class="bi bi-eye"></i>
-                  </button>
-                </div>
-                {% if form.password2.errors %}
-                  <div class="invalid-feedback d-block">
-                    {{ form.password2.errors }}
-                  </div>
-                {% endif %}
-              </div>
-
-              <div class="mb-3">
-                {{ form.user_type.label_tag }}
-                <select name="user_type" class="form-select" id="{{ form.user_type.id_for_label }}">
-                  {% for value, label in form.user_type.field.choices %}
-                    <option value="{{ value }}" {% if form.user_type.value == value %}selected{% endif %}>{{ label }}</option>
-                  {% endfor %}
-                </select>
-                {% if form.user_type.errors %}
-                  <div class="invalid-feedback d-block">
-                    {{ form.user_type.errors }}
-                  </div>
-                {% endif %}
-              </div>
-
-              <div class="d-grid">
-                <button type="submit" class="btn btn-primary" id="submit-btn" onclick="this.form.classList.add('was-validated'); this.innerHTML='<span class=\'spinner-border spinner-border-sm\'></span> Registering...'">
-                  <i class="bi bi-person-plus"></i> Register
-                </button>
-              </div>
-            </form>
-
-            <hr class="my-4">
-            <div class="text-center">
-              <a href="{% url 'login' %}" class="text-decoration-none">Already have an account? Login</a>
             </div>
-          </div>
         </div>
-      </div>
     </div>
-  </div>
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-  <script>
-    function checkPasswordStrength(password) {
-      const meter = document.getElementById('strength-meter');
-      const text = document.getElementById('password-strength-text');
-      
-      let strength = 0;
-      if (password.length >= 8) strength++;
-      if (password.match(/[a-z]+/)) strength++;
-      if (password.match(/[A-Z]+/)) strength++;
-      if (password.match(/[0-9]+/)) strength++;
-      if (password.match(/[^a-zA-Z0-9]+/)) strength++;
+</div>
+{% endblock %}
 
-      switch (strength) {
-        case 0:
-        case 1:
-          meter.className = 'strength-weak';
-          meter.style.width = '20%';
-          text.innerHTML = '<span class="text-danger">Weak password</span>';
-          break;
-        case 2:
-          meter.className = 'strength-fair';
-          meter.style.width = '40%';
-          text.innerHTML = '<span class="text-warning">Fair password</span>';
-          break;
-        case 3:
-          meter.className = 'strength-good';
-          meter.style.width = '60%';
-          text.innerHTML = '<span class="text-info">Good password</span>';
-          break;
-        case 4:
-        case 5:
-          meter.className = 'strength-strong';
-          meter.style.width = '100%';
-          text.innerHTML = '<span class="text-success">Strong password</span>';
-          break;
-      }
+{% block extra_scripts %}
+<script>
+    function checkPasswordStrength(password) {
+        const meter = document.getElementById('strength-meter');
+        const text = document.getElementById('password-strength-text');
+        
+        let strength = 0;
+        if (password.length >= 8) strength++;
+        if (password.match(/[a-z]+/)) strength++;
+        if (password.match(/[A-Z]+/)) strength++;
+        if (password.match(/[0-9]+/)) strength++;
+        if (password.match(/[^a-zA-Z0-9]+/)) strength++;
+
+        switch (strength) {
+            case 0:
+            case 1:
+                meter.className = 'strength-weak';
+                meter.style.width = '20%';
+                text.innerHTML = '<span class="text-danger">Weak password</span>';
+                break;
+            case 2:
+                meter.className = 'strength-fair';
+                meter.style.width = '40%';
+                text.innerHTML = '<span class="text-warning">Fair password</span>';
+                break;
+            case 3:
+                meter.className = 'strength-good';
+                meter.style.width = '60%';
+                text.innerHTML = '<span class="text-info">Good password</span>';
+                break;
+            case 4:
+            case 5:
+                meter.className = 'strength-strong';
+                meter.style.width = '100%';
+                text.innerHTML = '<span class="text-success">Strong password</span>';
+                break;
+        }
     }
 
     function togglePassword(inputId) {
-      const input = document.getElementById(inputId);
-      const icon = event.currentTarget.querySelector('i');
-      if (input.type === 'password') {
-        input.type = 'text';
-        icon.classList.remove('bi-eye');
-        icon.classList.add('bi-eye-slash');
-      } else {
-        input.type = 'password';
-        icon.classList.remove('bi-eye-slash');
-        icon.classList.add('bi-eye');
-      }
+        const input = document.getElementById(inputId);
+        const icon = event.currentTarget.querySelector('i');
+        if (input.type === 'password') {
+            input.type = 'text';
+            icon.classList.remove('bi-eye');
+            icon.classList.add('bi-eye-slash');
+        } else {
+            input.type = 'password';
+            icon.classList.remove('bi-eye-slash');
+            icon.classList.add('bi-eye');
+        }
     }
-  </script>
-</body>
-</html>
+</script>
+{% endblock %}

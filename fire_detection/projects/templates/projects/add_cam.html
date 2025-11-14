@@ -1,266 +1,90 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="utf-8">
-    <title>Add Cameras - Fire Detection</title>
-    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+{% extends 'base.html' %}
+{% load role_colors %}
 
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.0/css/all.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+{% block title %}Add Cameras - Fire Detection{% endblock %}
 
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" integrity="sha256-kLaT2GOSpHechhsozzB+flnD+zUyjE2LlfWPgU04xyI=" crossorigin="">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css">
+{% block navbar_brand_url %}{% url 'supervisor_dashboard' %}{% endblock %}
 
-    <style>
-        :root {
-            --primary-gradient: linear-gradient(135deg, #3b82f6 0%, #38bdf8 100%);
-            --success-gradient: linear-gradient(135deg, #10b981 0%, #34d399 100%);
-            --danger-gradient: linear-gradient(135deg, #ef4444 0%, #f87171 100%);
-            --glass-bg: rgba(255, 255, 255, 0.95);
-            --shadow-soft: 0 10px 40px rgba(0, 0, 0, 0.08);
-            --shadow-medium: 0 20px 60px rgba(0, 0, 0, 0.12);
-        }
-        
-        body {
-            min-height: 100vh;
-            background-attachment: fixed;
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            color: #0f172a;
-        }
-        
-        .hero-bar {
-            background: var(--primary-gradient);
-            color: #fff;
-            box-shadow: 0 10px 40px rgba(8, 145, 178, 0.3);
-        }
-        
-        .hero-title {
-            font-family: 'Jost', sans-serif;
-        }
-        
-        .step-indicator {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            font-weight: 600;
-        }
-        
-        .step-pill {
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 700;
-            background: rgba(255,255,255,0.2);
-            border: 2px solid rgba(255,255,255,0.3);
-            color: #fff;
-            transition: all 0.3s ease;
-        }
-        
-        .step-pill.active {
-            background: rgba(255,255,255,0.95);
-            color: #0891b2;
-            transform: scale(1.1);
-            box-shadow: 0 8px 20px rgba(255,255,255,0.4);
-        }
-        
-        .card-glass {
-            background: var(--glass-bg);
-            backdrop-filter: blur(20px);
-            border-radius: 24px;
-            padding: 2.5rem;
-            box-shadow: var(--shadow-medium);
-            border: 1px solid rgba(255,255,255,0.3);
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-        }
-        
-        .card-glass:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 25px 70px rgba(0, 0, 0, 0.15);
-        }
-        
-        .badge-context {
-            background: rgba(8, 145, 178, 0.15);
-            color: #0891b2;
-            border-radius: 50px;
-            padding: 0.5rem 1rem;
-            font-size: 0.85rem;
-            font-weight: 600;
-        }
-        
-        .field-label {
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-            font-size: 0.78rem;
-            color: #475569;
-            margin-bottom: 0.75rem;
-            display: block;
-        }
-        
-        .form-control,
-        .form-select,
-        textarea {
-            border-radius: 12px;
-            border: 2px solid rgba(8, 145, 178, 0.2);
-            padding: 0.875rem 1.25rem;
-            transition: all 0.3s ease;
-            background: rgba(255, 255, 255, 0.9);
-        }
-        
-        .form-control:focus,
-        .form-select:focus,
-        textarea:focus {
-            border-color: #0891b2;
-            box-shadow: 0 0 0 4px rgba(8, 145, 178, 0.1);
-            background: white;
-            outline: none;
-        }
-        
-        .btn-gradient {
-            background: var(--primary-gradient);
-            border: none;
-            color: #fff;
-            font-weight: 600;
-            border-radius: 12px;
-            padding: 0.875rem 2rem;
-            box-shadow: 0 8px 25px rgba(8, 145, 178, 0.4);
-            transition: all 0.3s ease;
-        }
-        
-        .btn-gradient:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 12px 35px rgba(8, 145, 178, 0.5);
-            color: white;
-        }
-        .btn-success-gradient {
-            background: var(--success-gradient);
-            border: none;
-            color: white;
-            font-weight: 600;
-            border-radius: 12px;
-            padding: 0.875rem 2rem;
-            box-shadow: 0 8px 25px rgba(16, 185, 129, 0.4);
-            transition: all 0.3s ease;
-        }
-        
-        .btn-success-gradient:hover:not(:disabled) {
-            transform: translateY(-2px);
-            box-shadow: 0 12px 35px rgba(16, 185, 129, 0.5);
-            color: white;
-        }
-        
-        .btn-outline-light {
-            border: 2px solid rgba(255,255,255,0.3);
-            color: white;
-            background: rgba(255,255,255,0.1);
-            backdrop-filter: blur(10px);
-            border-radius: 12px;
-            padding: 0.875rem 2rem;
-            font-weight: 600;
-            transition: all 0.3s ease;
-        }
-        
-        .btn-outline-light:hover {
-            background: rgba(255,255,255,0.2);
-            border-color: rgba(255,255,255,0.5);
-            color: white;
-            transform: translateY(-2px);
-        }
-        
-        #map {
-            height: 700px;
-            border-radius: 20px;
-            border: 2px solid rgba(8, 145, 178, 0.2);
-            box-shadow: inset 0 0 0 1px rgba(15,23,42,0.08);
-            transition: border-color 0.3s ease;
-        }
-        
-        #map:hover {
-            border-color: rgba(8, 145, 178, 0.4);
-        }
-        
-        .alert-modern {
-            border-radius: 18px;
-            border: none;
-            box-shadow: 0 15px 40px rgba(16, 185, 129, 0.3);
-            backdrop-filter: blur(10px);
-        }
-        
-        .toggle-group {
-            background: rgba(8, 145, 178, 0.05);
-            border-radius: 18px;
-            padding: 1.25rem;
-            border: 2px solid rgba(8, 145, 178, 0.1);
-        }
-        
-        .form-check-input:checked {
-            background-color: #0891b2;
-            border-color: #0891b2;
-        }
-        
-        .form-check-label {
-            font-weight: 600;
-            color: #2d3748;
-            cursor: pointer;
-        }
-    </style>
-</head>
-<body>
-    <header class="hero-bar py-3">
-        <div class="container">
+{% block navbar_content %}
+<ul class="navbar-nav me-auto">
+    <li class="nav-item">
+        <a class="nav-link" href="{% url 'supervisor_dashboard' %}">
+            <i class="bi bi-speedometer2"></i> Dashboard
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" href="{% url 'projects:project_list' %}">
+            <i class="bi bi-folder"></i> Projects
+        </a>
+    </li>
+</ul>
+{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" integrity="sha256-kLaT2GOSpHechhsozzB+flnD+zUyjE2LlfWPgU04xyI=" crossorigin="">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css">
+<style>
+    #map {
+        height: 700px;
+        border-radius: 12px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Header -->
+    <div class="card border-0 {% get_role_bg user %} text-white mb-4 shadow-lg">
+        <div class="card-body py-4">
             <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-4">
                 <div>
-                    <h3 class="display-5 hero-title fw-bold mb-2">Position Cameras</h3>
-                    <p class="lead text-white-75 mb-0">Project <strong style="color: black;">{{ project_name }}</strong> · define the streams to monitor and place them precisely on the map.</p>
+                    <h1 class="h2 mb-2">Position Cameras</h1>
+                    <p class="lead mb-0">Project <strong>{{ project_name }}</strong> · define the streams to monitor and place them precisely on the map.</p>
                 </div>
-                <div class="step-indicator">
-                    <div class="step-pill">1</div>
-                    <div class="step-pill">2</div>
-                    <div class="step-pill active">3</div>
+                <div class="d-flex gap-3">
+                    <div class="badge bg-white text-dark rounded-circle d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">1</div>
+                    <div class="badge bg-white text-dark rounded-circle d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">2</div>
+                    <div class="badge bg-white {% get_role_text user %} rounded-circle d-flex align-items-center justify-content-center fw-bold" style="width: 50px; height: 50px;">3</div>
                 </div>
             </div>
         </div>
-    </header>
+    </div>
 
-    <main class="container py-5">
-        {% if messages %}
-            <div class="col-lg-6 mx-auto mb-4">
-                <div class="alert alert-success alert-modern alert-dismissible fade show text-center" role="alert">
-                    {% for message in messages %}
-                        {{ message }}
-                    {% endfor %}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                </div>
+    {% if messages %}
+        <div class="col-lg-6 mx-auto mb-4">
+            {% for message in messages %}
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
             </div>
-        {% endif %}
+            {% endfor %}
+        </div>
+    {% endif %}
 
-        <form method="post" enctype="multipart/form-data">
-            {% csrf_token %}
-            <div class="row g-4">
-                <div class="col-lg-5">
-                    <div class="card-glass h-100">
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div class="row g-4">
+            <div class="col-lg-5">
+                <div class="card shadow-lg border-0 h-100">
+                    <div class="card-body p-4">
                         <div class="d-flex flex-column gap-2 mb-4">
-                            <span class="badge bg-primary-subtle text-primary-emphasis rounded-pill px-3 py-2">
-                                <i class="bi bi-diagram-3 me-2" style="color: black; font-size: 1.5rem;"></i>
-                                    <span style="color: black; font-size: 1.5rem;">Project: <span class="fs-5 fw-semibold">{{ project_name }}</span></span>
+                            <span class="badge {% get_role_badge user %} rounded-pill px-3 py-2 fs-6">
+                                <i class="bi bi-diagram-3 me-2"></i>
+                                Project: <span class="fw-semibold">{{ project_name }}</span>
                             </span>
-                            <span style="color: black; font-size: 1rem;" >Target Zone: <strong>{{ zone_name }}</strong></span>
+                            <span class="text-muted">Target Zone: <strong>{{ zone_name }}</strong></span>
                         </div>
 
                         <div class="mb-4">
-                            <label class="field-label mb-2" for="name_cam">Camera Name</label>
+                            <label class="form-label fw-semibold text-uppercase small text-muted mb-2" for="name_cam">Camera Name</label>
                             <input type="text" id="name_cam" class="form-control form-control-lg" name="name_cam" placeholder="Main entrance camera" autocomplete="off">
                         </div>
 
                         <input type="text" id="coords_cam" class="form-control" name="coords_cam" hidden>
 
                         <div class="mb-4">
-                            <span class="field-label d-block mb-3">Stream Type</span>
-                            <div class="toggle-group">
+                            <span class="form-label fw-semibold text-uppercase small text-muted d-block mb-3">Stream Type</span>
+                            <div class="card border bg-light p-3">
                                 <div class="form-check">
                                     <input class="form-check-input" type="radio" name="streamType" id="ipPort" value="ipPort" checked>
                                     <label class="form-check-label fw-semibold" for="ipPort">Local Camera (IP Address + Port)</label>
@@ -273,7 +97,7 @@
                         </div>
 
                         <div class="mb-4" id="ipPortFields">
-                            <label class="field-label mb-2">Local Configuration</label>
+                            <label class="form-label fw-semibold text-uppercase small text-muted mb-2">Local Configuration</label>
                             <input type="text" id="adresse_cam" class="form-control mb-3" placeholder="IP Address" name="adresse_cam">
                             <div class="row g-2">
                                 <div class="col-5">
@@ -292,177 +116,181 @@
                         </div>
 
                         <div class="mb-4" id="fullRtspUrlField" style="display:none;">
-                            <label class="field-label mb-2" for="custom_url">Full RTSP URL</label>
+                            <label class="form-label fw-semibold text-uppercase small text-muted mb-2" for="custom_url">Full RTSP URL</label>
                             <input type="text" id="custom_url" class="form-control" placeholder="rtsp://user:pass@ip:port/path" name="custom_url">
                         </div>
 
                         <div class="mb-4">
-                            <label class="field-label mb-2" for="description_cam">Description</label>
+                            <label class="form-label fw-semibold text-uppercase small text-muted mb-2" for="description_cam">Description</label>
                             <textarea class="form-control" id="description_cam" name="description_cam" rows="4" placeholder="Add useful details (orientation, covered area, equipment, etc.)"></textarea>
                         </div>
 
                         <div class="d-flex flex-column flex-md-row gap-3">
-                            <button class="btn btn-gradient w-100 w-md-auto" type="submit" value="false" name="ajoutez_un_cam">
+                            <button class="btn btn-outline-secondary w-100 w-md-auto" type="submit" value="false" name="ajoutez_un_cam">
                                 <i class="bi bi-plus-circle me-2"></i>Add Another Camera
                             </button>
-                            <button class="btn btn-success-gradient text-white fw-semibold w-100 w-md-auto" type="submit">
+                            <button class="btn {% get_role_btn user %} fw-semibold w-100 w-md-auto" type="submit">
                                 Save and Finish <i class="bi bi-check-circle ms-2"></i>
                             </button>
                         </div>
                     </div>
                 </div>
+            </div>
 
-                <div class="col-lg-7">
-                    <div class="card-glass h-100">
+            <div class="col-lg-7">
+                <div class="card shadow-lg border-0 h-100">
+                    <div class="card-body p-4">
                         <div class="d-flex justify-content-between align-items-center mb-3">
                             <h2 class="h5 fw-semibold mb-0">Map Location</h2>
-                            <span class="badge-context"><i class="bi bi-geo-alt me-2"></i>Leaflet Draw</span>
+                            <span class="badge {% get_role_badge user %} rounded-pill">
+                                <i class="bi bi-geo-alt me-2"></i>Leaflet Draw
+                            </span>
                         </div>
                         <p class="text-secondary mb-3">Drop a marker to indicate the exact location of the camera. Only one marker is allowed per camera.</p>
                         <div id="map" class="w-100"></div>
                     </div>
                 </div>
             </div>
-        </form>
-    </main>
+        </div>
+    </form>
+</div>
+{% endblock %}
 
-    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js" integrity="sha256-WBkoXOwTeyKclOHuWtc+i2uENFpDZ9YPdf5Hf+D7ewM=" crossorigin=""></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
-    
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const ipPortRadio = document.getElementById('ipPort');
-            const fullRtspUrlRadio = document.getElementById('fullRtspUrl');
-            const ipPortFields = document.getElementById('ipPortFields');
-            const fullRtspUrlField = document.getElementById('fullRtspUrlField');
-            const pathSelect = document.getElementById('path');
-            const customPathInput = document.getElementById('customPath');
+{% block extra_scripts %}
+<script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js" integrity="sha256-WBkoXOwTeyKclOHuWtc+i2uENFpDZ9YPdf5Hf+D7ewM=" crossorigin=""></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
 
-            function toggleInputFields() {
-                const ipMode = ipPortRadio.checked;
-                ipPortFields.style.display = ipMode ? '' : 'none';
-                fullRtspUrlField.style.display = ipMode ? 'none' : '';
-            }
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const ipPortRadio = document.getElementById('ipPort');
+        const fullRtspUrlRadio = document.getElementById('fullRtspUrl');
+        const ipPortFields = document.getElementById('ipPortFields');
+        const fullRtspUrlField = document.getElementById('fullRtspUrlField');
+        const pathSelect = document.getElementById('path');
+        const customPathInput = document.getElementById('customPath');
 
-            function handlePathChange() {
-                if (pathSelect.value === 'custom') {
-                    customPathInput.style.display = 'block';
-                    customPathInput.name = 'rest_de_path';
-                    pathSelect.name = '';
-                } else {
-                    customPathInput.style.display = 'none';
-                    customPathInput.name = 'custom_rest_de_path';
-                    pathSelect.name = 'rest_de_path';
-                }
-            }
+        function toggleInputFields() {
+            const ipMode = ipPortRadio.checked;
+            ipPortFields.style.display = ipMode ? '' : 'none';
+            fullRtspUrlField.style.display = ipMode ? 'none' : '';
+        }
 
-            ipPortRadio.addEventListener('change', toggleInputFields);
-            fullRtspUrlRadio.addEventListener('change', toggleInputFields);
-            pathSelect.addEventListener('change', handlePathChange);
-
-            toggleInputFields();
-            handlePathChange();
-        });
-    </script>
-
-    <script>
-        const map = L.map('map').setView([36.89186227222111, 10.187473488849253], 13);
-
-        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-            attribution: 'Leaflet Map ©'
-        }).addTo(map);
-
-        const drawnItems = new L.FeatureGroup();
-        map.addLayer(drawnItems);
-
-        const drawControl = new L.Control.Draw({
-            draw: {
-                marker: true,
-                polygon: false,
-                polyline: false,
-                rectangle: false,
-                circle: false,
-                circlemarker: false
-            },
-            edit: {
-                featureGroup: drawnItems,
-                remove: true
-            }
-        });
-        map.addControl(drawControl);
-
-        const cameraIcon = L.icon({
-            iconUrl: 'data:image/jpeg;base64,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',
-            iconSize: [32, 32],
-        });
-
-        function serializeMarker() {
-            const geojson = drawnItems.toGeoJSON();
-            if (geojson.features.length) {
-                const coords = geojson.features[0].geometry.coordinates;
-                document.getElementById('coords_cam').value = JSON.stringify({
-                    type: 'Point',
-                    coordinates: coords
-                });
+        function handlePathChange() {
+            if (pathSelect.value === 'custom') {
+                customPathInput.style.display = 'block';
+                customPathInput.name = 'rest_de_path';
+                pathSelect.name = '';
             } else {
-                document.getElementById('coords_cam').value = '';
+                customPathInput.style.display = 'none';
+                customPathInput.name = 'custom_rest_de_path';
+                pathSelect.name = 'rest_de_path';
             }
         }
 
-        map.on('draw:created', function (e) {
-            if (drawnItems.getLayers().length) {
-                alert('Seul un marqueur peut être placé à la fois.');
-                return;
+        ipPortRadio.addEventListener('change', toggleInputFields);
+        fullRtspUrlRadio.addEventListener('change', toggleInputFields);
+        pathSelect.addEventListener('change', handlePathChange);
+
+        toggleInputFields();
+        handlePathChange();
+    });
+</script>
+
+<script>
+    const map = L.map('map').setView([36.89186227222111, 10.187473488849253], 13);
+
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+        attribution: 'Leaflet Map ©'
+    }).addTo(map);
+
+    const drawnItems = new L.FeatureGroup();
+    map.addLayer(drawnItems);
+
+    const drawControl = new L.Control.Draw({
+        draw: {
+            marker: true,
+            polygon: false,
+            polyline: false,
+            rectangle: false,
+            circle: false,
+            circlemarker: false
+        },
+        edit: {
+            featureGroup: drawnItems,
+            remove: true
+        }
+    });
+    map.addControl(drawControl);
+
+    const cameraIcon = L.icon({
+        iconUrl: 'data:image/jpeg;base64,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',
+        iconSize: [32, 32],
+    });
+
+    function serializeMarker() {
+        const geojson = drawnItems.toGeoJSON();
+        if (geojson.features.length) {
+            const coords = geojson.features[0].geometry.coordinates;
+            document.getElementById('coords_cam').value = JSON.stringify({
+                type: 'Point',
+                coordinates: coords
+            });
+        } else {
+            document.getElementById('coords_cam').value = '';
+        }
+    }
+
+    map.on('draw:created', function (e) {
+        if (drawnItems.getLayers().length) {
+            alert('Seul un marqueur peut être placé à la fois.');
+            return;
+        }
+        const marker = L.marker(e.layer.getLatLng(), { icon: cameraIcon });
+        drawnItems.addLayer(marker);
+        serializeMarker();
+    });
+
+    map.on('draw:deleted', function () {
+        serializeMarker();
+        document.getElementById('name_cam').value = '';
+        document.getElementById('num_port').value = '';
+        document.getElementById('adresse_cam').value = '';
+        document.getElementById('custom_url').value = '';
+        document.getElementById('description_cam').value = '';
+    });
+
+    {% for zone_data in zones_data %}
+        {% if zone_data.coords_json != 'null' %}
+        (function() {
+            try {
+                const geojson = {{ zone_data.coords_json|safe }};
+                const polygonLayer = L.geoJSON(geojson).addTo(map);
+                const tooltipContent = `<strong>{{ zone_data.zone.name_zone|escapejs }}</strong><br>{{ zone_data.zone.description_zone|default:""|escapejs }}`;
+                polygonLayer.bindTooltip(tooltipContent, { permanent: true, direction: 'center' }).openTooltip();
+            } catch(e) {
+                console.error('Error loading zone:', e);
             }
-            const marker = L.marker(e.layer.getLatLng(), { icon: cameraIcon });
-            drawnItems.addLayer(marker);
-            serializeMarker();
-        });
+        })();
+        {% endif %}
+    {% endfor %}
 
-        map.on('draw:deleted', function () {
-            serializeMarker();
-            document.getElementById('name_cam').value = '';
-            document.getElementById('num_port').value = '';
-            document.getElementById('adresse_cam').value = '';
-            document.getElementById('custom_url').value = '';
-            document.getElementById('description_cam').value = '';
-        });
-
-        {% for zone_data in zones_data %}
-            {% if zone_data.coords_json != 'null' %}
-            (function() {
-                try {
-                    const geojson = {{ zone_data.coords_json|safe }};
-                    const polygonLayer = L.geoJSON(geojson).addTo(map);
-                    const tooltipContent = `<strong>{{ zone_data.zone.name_zone|escapejs }}</strong><br>{{ zone_data.zone.description_zone|default:""|escapejs }}`;
-                    polygonLayer.bindTooltip(tooltipContent, { permanent: true, direction: 'center' }).openTooltip();
-                } catch(e) {
-                    console.error('Error loading zone:', e);
-                }
-            })();
-            {% endif %}
-        {% endfor %}
-
-        {% for cam_data in cams_data %}
-            {% if cam_data.coords_json != 'null' %}
-            (function() {
-                try {
-                    const geojson = {{ cam_data.coords_json|safe }};
-                    const marker = L.geoJSON(geojson, {
-                        pointToLayer: function (feature, latlng) {
-                            return L.marker(latlng, { icon: cameraIcon });
-                        }
-                    }).addTo(map);
-                    const popupContent = `<strong>{{ cam_data.cam.name_cam|escapejs }}</strong><br>{{ cam_data.cam.adresse_cam|default:""|escapejs }}`;
-                    marker.bindPopup(popupContent);
-                } catch(e) {
-                    console.error('Error loading camera:', e);
-                }
-            })();
-            {% endif %}
-        {% endfor %}
-    </script>
-</body>
-</html>
+    {% for cam_data in cams_data %}
+        {% if cam_data.coords_json != 'null' %}
+        (function() {
+            try {
+                const geojson = {{ cam_data.coords_json|safe }};
+                const marker = L.geoJSON(geojson, {
+                    pointToLayer: function (feature, latlng) {
+                        return L.marker(latlng, { icon: cameraIcon });
+                    }
+                }).addTo(map);
+                const popupContent = `<strong>{{ cam_data.cam.name_cam|escapejs }}</strong><br>{{ cam_data.cam.adresse_cam|default:""|escapejs }}`;
+                marker.bindPopup(popupContent);
+            } catch(e) {
+                console.error('Error loading camera:', e);
+            }
+        })();
+        {% endif %}
+    {% endfor %}
+</script>
+{% endblock %}

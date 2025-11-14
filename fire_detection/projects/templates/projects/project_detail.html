@@ -1,375 +1,175 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Project Details - {{ project.name }}</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" integrity="sha256-kLaT2GOSpHechhsozzB+flnD+zUyjE2LlfWPgU04xyI=" crossorigin="">
-    <style>
-        :root {
-            --primary-gradient: linear-gradient(135deg, #6ba6da 0%, #4b9fa2 100%);
-            --success-gradient: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
-            --glass-bg: rgba(255, 255, 255, 0.95);
-            --shadow-soft: 0 10px 40px rgba(0, 0, 0, 0.08);
-            --shadow-medium: 0 20px 60px rgba(0, 0, 0, 0.12);
-        }
-        
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            background-attachment: fixed;
-            min-height: 100vh;
-            padding-bottom: 2rem;
-        }
-        
-        .navbar-custom {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            box-shadow: var(--shadow-soft);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-        }
-        
-        .navbar-brand {
-            font-weight: 700;
-            font-size: 1.25rem;
-            background: var(--primary-gradient);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-        
-        .main-container {
-            max-width: 1400px;
-            margin: 2rem auto;
-            padding: 0 1rem;
-        }
-        
-        .breadcrumb-modern {
-            background: var(--glass-bg);
-            backdrop-filter: blur(10px);
-            border-radius: 16px;
-            padding: 1rem 1.5rem;
-            box-shadow: var(--shadow-soft);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            margin-bottom: 2rem;
-        }
-        
-        .card-modern {
-            background: var(--glass-bg);
-            backdrop-filter: blur(20px);
-            border-radius: 24px;
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            box-shadow: var(--shadow-medium);
-            overflow: hidden;
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-            margin-bottom: 2rem;
-        }
-        
-        .card-modern:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 25px 70px rgba(0, 0, 0, 0.15);
-        }
-        
-        .card-header-modern {
-            background: var(--primary-gradient);
-            color: white;
-            padding: 2rem;
-            border: none;
-        }
-        
-        .card-body-modern {
-            padding: 2.5rem;
-        }
-        
-        .badge-status {
-            padding: 0.5rem 1.25rem;
-            border-radius: 50px;
-            font-weight: 600;
-            font-size: 0.875rem;
-        }
-        
-        .badge-planned {
-            background: rgba(108, 117, 125, 0.15);
-            color: #6c757d;
-        }
-        
-        .badge-in-progress {
-            background: rgba(13, 110, 253, 0.15);
-            color: #0d6efd;
-        }
-        
-        .badge-completed {
-            background: rgba(25, 135, 84, 0.15);
-            color: #198754;
-        }
-        
-        .badge-cancelled {
-            background: rgba(220, 53, 69, 0.15);
-            color: #dc3545;
-        }
-        
-        .info-item {
-            padding: 1rem;
-            border-radius: 12px;
-            background: rgba(102, 126, 234, 0.05);
-            border: 1px solid rgba(102, 126, 234, 0.1);
-            margin-bottom: 1rem;
-        }
-        
-        .info-label {
-            font-size: 0.75rem;
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
-            color: #6c757d;
-            font-weight: 600;
-            margin-bottom: 0.25rem;
-        }
-        
-        .info-value {
-            font-size: 1rem;
-            font-weight: 600;
-            color: #2d3748;
-        }
-        
-        .zone-card {
-            background: rgba(255, 255, 255, 0.8);
-            border-radius: 16px;
-            padding: 1.5rem;
-            margin-bottom: 1.5rem;
-            border: 2px solid rgba(102, 126, 234, 0.1);
-            transition: all 0.3s ease;
-        }
-        
-        .zone-card:hover {
-            border-color: rgba(102, 126, 234, 0.3);
-            transform: translateX(4px);
-        }
-        
-        .camera-item {
-            background: rgba(102, 126, 234, 0.05);
-            border-radius: 12px;
-            padding: 1rem;
-            margin-bottom: 0.75rem;
-            border-left: 3px solid #667eea;
-        }
-        
-        #map {
-            height: 600px;
-            border-radius: 20px;
-            border: 2px solid rgba(102, 126, 234, 0.2);
-            box-shadow: inset 0 0 0 1px rgba(15,23,42,0.08);
-        }
-        
-        .btn-modern {
-            border-radius: 12px;
-            padding: 0.875rem 2rem;
-            font-weight: 600;
-            font-size: 0.95rem;
-            transition: all 0.3s ease;
-            border: none;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-        }
-        
-        .btn-primary-modern {
-            background: var(--primary-gradient);
-            color: white;
-        }
-        
-        .btn-primary-modern:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
-            color: white;
-        }
-        
-        .btn-outline-modern {
-            border: 2px solid rgba(102, 126, 234, 0.3);
-            color: #667eea;
-            background: rgba(255, 255, 255, 0.8);
-        }
-        
-        .btn-outline-modern:hover {
-            background: rgba(102, 126, 234, 0.1);
-            border-color: #667eea;
-            color: #667eea;
-            transform: translateY(-2px);
-        }
-        
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1rem;
-            margin-bottom: 2rem;
-        }
-        
-        .stat-card {
-            background: var(--glass-bg);
-            backdrop-filter: blur(20px);
-            border-radius: 16px;
-            padding: 1.5rem;
-            text-align: center;
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            box-shadow: var(--shadow-soft);
-        }
-        
-        .stat-number {
-            font-size: 2.5rem;
-            font-weight: 700;
-            background: var(--primary-gradient);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-        
-        .stat-label {
-            font-size: 0.875rem;
-            color: #6c757d;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            margin-top: 0.5rem;
-        }
-    </style>
-</head>
-<body>
-    <!-- Navbar -->
-    <nav class="navbar navbar-expand-lg navbar-custom">
-        <div class="container">
-            <a class="navbar-brand" href="{% url 'supervisor_dashboard' %}">
-                <i class="bi bi-fire me-2"></i>Fire Detection System
-            </a>
-            <div class="navbar-nav ms-auto">
-                <a href="{% url 'projects:project_list' %}" class="btn btn-outline-modern btn-sm me-2">
-                        <i class="bi bi-arrow-left me-1"></i> Back to Projects
-                </a>
-            </div>
-        </div>
-    </nav>
+{% extends 'base.html' %}
+{% load role_colors %}
 
-    <!-- Main Content -->
-    <div class="main-container">
-        <!-- Breadcrumb -->
-        <div class="breadcrumb-modern">
-            <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
-                <nav aria-label="breadcrumb">
-                    <ol class="breadcrumb mb-0">
-                        <li class="breadcrumb-item">
-                            <a href="{% url 'supervisor_dashboard' %}" class="text-decoration-none">
-                                <i class="bi bi-house-door me-1"></i>Dashboard
-                            </a>
-                        </li>
-                        <li class="breadcrumb-item">
-                            <a href="{% url 'projects:project_list' %}" class="text-decoration-none">Projects</a>
-                        </li>
-                        <li class="breadcrumb-item active">{{ project.name }}</li>
-                    </ol>
-                </nav>
+{% block title %}Project Details - {{ project.name }}{% endblock %}
+
+{% block navbar_brand_url %}{% url 'supervisor_dashboard' %}{% endblock %}
+
+{% block navbar_content %}
+<ul class="navbar-nav me-auto">
+    <li class="nav-item">
+        <a class="nav-link" href="{% url 'supervisor_dashboard' %}">
+            <i class="bi bi-speedometer2"></i> Dashboard
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link active" href="{% url 'projects:project_list' %}">
+            <i class="bi bi-folder"></i> Projects
+        </a>
+    </li>
+</ul>
+{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" integrity="sha256-kLaT2GOSpHechhsozzB+flnD+zUyjE2LlfWPgU04xyI=" crossorigin="">
+<style>
+    #map {
+        height: 600px;
+        border-radius: 12px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Breadcrumb -->
+    <div class="card border-0 bg-light mb-4">
+        <div class="card-body py-3">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-0">
+                    <li class="breadcrumb-item">
+                        <a href="{% url 'supervisor_dashboard' %}" class="text-decoration-none">
+                            <i class="bi bi-house-door me-1"></i>Dashboard
+                        </a>
+                    </li>
+                    <li class="breadcrumb-item">
+                        <a href="{% url 'projects:project_list' %}" class="text-decoration-none">Projects</a>
+                    </li>
+                    <li class="breadcrumb-item active">{{ project.name }}</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <!-- Project Header Card -->
+    <div class="card shadow-lg border-0 mb-4">
+        <div class="card-header {% get_role_bg user %} text-white">
+            <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+                <div>
+                    <h1 class="h2 mb-2">{{ project.name }}</h1>
+                    <p class="mb-0 opacity-90">{{ project.description|default:"No description" }}</p>
+                </div>
+                <span class="badge 
+                    {% if project.status == 'completed' %}bg-success
+                    {% elif project.status == 'in_progress' %}bg-primary
+                    {% elif project.status == 'cancelled' %}bg-danger
+                    {% else %}bg-secondary{% endif %} fs-6 px-3 py-2">
+                    {{ project.get_status_display }}
+                </span>
             </div>
         </div>
 
-        <!-- Project Header Card -->
-        <div class="card card-modern">
-            <div class="card-header card-header-modern">
-                <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
-                    <div>
-                        <h1 class="h2 mb-2">{{ project.name }}</h1>
-                        <p class="mb-0 opacity-90">{{ project.description|default:"No description" }}</p>
-                    </div>
-                    <span class="badge-status badge-{{ project.status }}">
-                        {{ project.get_status_display }}
-                    </span>
-                </div>
-            </div>
-
-            <div class="card-body card-body-modern">
-                <!-- Stats Grid -->
-                <div class="stats-grid">
-                    <div class="stat-card">
-                        <div class="stat-number">{{ zones|length }}</div>
-                        <div class="stat-label">Zones</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-number">{{ total_cameras }}</div>
-                        <div class="stat-label">Cameras</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-number">{{ project.assigned_agents.count }}</div>
-                        <div class="stat-label">Assigned Agents</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-number">{{ project.start_date|date:"M d, Y" }}</div>
-                        <div class="stat-label">Start Date</div>
-                    </div>
-                </div>
-
-                <!-- Project Info -->
-                <div class="row g-3 mb-4">
-                    <div class="col-md-6">
-                        <div class="info-item">
-                            <div class="info-label">Supervisor</div>
-                            <div class="info-value">
-                                <i class="bi bi-person-badge me-2"></i>{{ project.supervisor.email }}
-                            </div>
+        <div class="card-body p-4">
+            <!-- Stats Grid -->
+            <div class="row g-3 mb-4">
+                <div class="col-md-3">
+                    <div class="card border-0 bg-light text-center">
+                        <div class="card-body">
+                            <div class="h2 mb-0 {% get_role_text user %}">{{ zones|length }}</div>
+                            <div class="text-muted small text-uppercase fw-semibold mt-2">Zones</div>
                         </div>
                     </div>
-                    <div class="col-md-6">
-                        <div class="info-item">
-                            <div class="info-label">Creation Date</div>
-                            <div class="info-value">
-                                <i class="bi bi-calendar-event me-2"></i>{{ project.created_at|date:"M d, Y at H:i" }}
+                </div>
+                <div class="col-md-3">
+                    <div class="card border-0 bg-light text-center">
+                        <div class="card-body">
+                            <div class="h2 mb-0 {% get_role_text user %}">{{ total_cameras }}</div>
+                            <div class="text-muted small text-uppercase fw-semibold mt-2">Cameras</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card border-0 bg-light text-center">
+                        <div class="card-body">
+                            <div class="h2 mb-0 {% get_role_text user %}">{{ project.assigned_agents.count }}</div>
+                            <div class="text-muted small text-uppercase fw-semibold mt-2">Assigned Agents</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card border-0 bg-light text-center">
+                        <div class="card-body">
+                            <div class="h5 mb-0 {% get_role_text user %}">{{ project.start_date|date:"M d, Y" }}</div>
+                            <div class="text-muted small text-uppercase fw-semibold mt-2">Start Date</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Project Info -->
+            <div class="row g-3 mb-4">
+                <div class="col-md-6">
+                    <div class="card border-0 bg-light">
+                        <div class="card-body">
+                            <div class="small text-uppercase text-muted fw-semibold mb-2">Supervisor</div>
+                            <div class="fw-semibold">
+                                <i class="bi bi-person-badge me-2 {% get_role_text user %}"></i>{{ project.supervisor.email }}
                             </div>
                         </div>
                     </div>
                 </div>
-
-                <!-- Assigned Agents -->
-                {% if project.assigned_agents.all %}
-                <div class="mb-4">
-                        <h5 class="mb-3">
-                        <i class="bi bi-people me-2"></i>Assigned Agents
-                    </h5>
-                    <div class="d-flex flex-wrap gap-2">
-                        {% for agent in project.assigned_agents.all %}
-                            <span class="badge bg-primary-subtle text-primary-emphasis px-3 py-2">
-                                <i class="bi bi-person me-1"></i>{{ agent.user.email }}
-                            </span>
-                        {% endfor %}
+                <div class="col-md-6">
+                    <div class="card border-0 bg-light">
+                        <div class="card-body">
+                            <div class="small text-uppercase text-muted fw-semibold mb-2">Creation Date</div>
+                            <div class="fw-semibold">
+                                <i class="bi bi-calendar-event me-2 {% get_role_text user %}"></i>{{ project.created_at|date:"M d, Y at H:i" }}
+                            </div>
+                        </div>
                     </div>
                 </div>
-                {% endif %}
             </div>
-        </div>
 
-        <!-- Zones and Cameras -->
-        {% if zones_data %}
-        <div class="card card-modern">
-            <div class="card-header card-header-modern">
-                <h2 class="h4 mb-0">
-                    <i class="bi bi-diagram-3 me-2"></i>Surveillance Zones
-                </h2>
+            <!-- Assigned Agents -->
+            {% if project.assigned_agents.all %}
+            <div class="mb-4">
+                <h5 class="mb-3">
+                    <i class="bi bi-people me-2"></i>Assigned Agents
+                </h5>
+                <div class="d-flex flex-wrap gap-2">
+                    {% for agent in project.assigned_agents.all %}
+                        <span class="badge {% get_role_badge user %} px-3 py-2">
+                            <i class="bi bi-person me-1"></i>{{ agent.user.email }}
+                        </span>
+                    {% endfor %}
+                </div>
             </div>
-            <div class="card-body card-body-modern">
-                {% for zone_data in zones_data %}
-                <div class="zone-card">
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Zones and Cameras -->
+    {% if zones_data %}
+    <div class="card shadow-lg border-0 mb-4">
+        <div class="card-header {% get_role_bg user %} text-white">
+            <h2 class="h4 mb-0">
+                <i class="bi bi-diagram-3 me-2"></i>Surveillance Zones
+            </h2>
+        </div>
+        <div class="card-body p-4">
+            {% for zone_data in zones_data %}
+            <div class="card border mb-3">
+                <div class="card-body">
                     <div class="d-flex justify-content-between align-items-start mb-3">
                         <div>
                             <h5 class="mb-1">
-                                <i class="bi bi-pentagon me-2 text-primary"></i>{{ zone_data.zone.name_zone }}
+                                <i class="bi bi-pentagon me-2 {% get_role_text user %}"></i>{{ zone_data.zone.name_zone }}
                             </h5>
                             {% if zone_data.zone.description_zone %}
                                 <p class="text-muted mb-0 small">{{ zone_data.zone.description_zone }}</p>
                             {% endif %}
                         </div>
-                        <span class="badge bg-info-subtle text-info-emphasis">
+                        <span class="badge bg-info fs-6">
                             {{ zone_data.cameras_data|length }} camera{{ zone_data.cameras_data|length|pluralize }}
                         </span>
                     </div>
@@ -380,26 +180,28 @@
                             <i class="bi bi-camera-video me-2"></i>Cameras
                         </h6>
                         {% for cam_data in zone_data.cameras_data %}
-                        <div class="camera-item">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <div>
-                                    <strong>{{ cam_data.cam.name_cam }}</strong>
-                                    {% if cam_data.cam.description_cam %}
-                                        <br><small class="text-muted">{{ cam_data.cam.description_cam }}</small>
-                                    {% endif %}
-                                    {% if cam_data.cam.rtsp_url %}
-                                        <br><small class="text-success">
-                                            <i class="bi bi-link-45deg me-1"></i>{{ cam_data.cam.rtsp_url|truncatechars:50 }}
-                                        </small>
-                                    {% endif %}
-                                </div>
-                                <div class="text-end">
-                                    {% if cam_data.cam.adresse_cam %}
-                                        <small class="text-muted d-block">
-                                            <i class="bi bi-router me-1"></i>{{ cam_data.cam.adresse_cam }}
-                                            {% if cam_data.cam.num_port %}:{{ cam_data.cam.num_port }}{% endif %}
-                                        </small>
-                                    {% endif %}
+                        <div class="card border-start border-4 border-primary mb-2">
+                            <div class="card-body py-2">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <strong>{{ cam_data.cam.name_cam }}</strong>
+                                        {% if cam_data.cam.description_cam %}
+                                            <br><small class="text-muted">{{ cam_data.cam.description_cam }}</small>
+                                        {% endif %}
+                                        {% if cam_data.cam.rtsp_url %}
+                                            <br><small class="text-success">
+                                                <i class="bi bi-link-45deg me-1"></i>{{ cam_data.cam.rtsp_url|truncatechars:50 }}
+                                            </small>
+                                        {% endif %}
+                                    </div>
+                                    <div class="text-end">
+                                        {% if cam_data.cam.adresse_cam %}
+                                            <small class="text-muted d-block">
+                                                <i class="bi bi-router me-1"></i>{{ cam_data.cam.adresse_cam }}
+                                                {% if cam_data.cam.num_port %}:{{ cam_data.cam.num_port }}{% endif %}
+                                            </small>
+                                        {% endif %}
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -411,126 +213,123 @@
                     </p>
                     {% endif %}
                 </div>
-                {% endfor %}
             </div>
-        </div>
-        {% else %}
-        <div class="card card-modern">
-            <div class="card-body card-body-modern text-center py-5">
-                <i class="bi bi-inbox display-1 text-muted mb-3"></i>
-                <h4 class="text-muted">No Zones Configured</h4>
-                <p class="text-muted">This project doesn't have any surveillance zones defined yet.</p>
-                <a href="{% url 'projects:add_zone' project.id %}" class="btn btn-primary-modern">
-                    <i class="bi bi-plus-circle me-2"></i>Add a Zone
-                </a>
-            </div>
-        </div>
-        {% endif %}
-
-        <!-- Map Card -->
-        {% if zones_data %}
-        <div class="card card-modern">
-            <div class="card-header card-header-modern">
-                <h2 class="h4 mb-0">
-                    <i class="bi bi-geo-alt me-2"></i>Map View
-                </h2>
-            </div>
-            <div class="card-body card-body-modern">
-                <div id="map"></div>
-            </div>
-        </div>
-        {% endif %}
-
-        <!-- Actions -->
-        <div class="d-flex gap-3 justify-content-end">
-            <a href="{% url 'projects:project_list' %}" class="btn btn-outline-modern">
-                <i class="bi bi-arrow-left me-2"></i>Back
-            </a>
-            {% if zones %}
-                <a href="{% url 'projects:add_zone' project.id %}" class="btn btn-primary-modern">
-                    <i class="bi bi-plus-circle me-2"></i>Add a Zone
-                </a>
-            {% endif %}
+            {% endfor %}
         </div>
     </div>
+    {% else %}
+    <div class="card shadow-lg border-0 mb-4">
+        <div class="card-body text-center py-5">
+            <i class="bi bi-inbox display-1 {% get_role_text user %} mb-3"></i>
+            <h4 class="text-muted">No Zones Configured</h4>
+            <p class="text-muted">This project doesn't have any surveillance zones defined yet.</p>
+            <a href="{% url 'projects:add_zone' project.id %}" class="btn {% get_role_btn user %} btn-lg">
+                <i class="bi bi-plus-circle me-2"></i>Add a Zone
+            </a>
+        </div>
+    </div>
+    {% endif %}
 
-    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js" integrity="sha256-WBkoXOwTeyKclOHuWtc+i2uENFpDZ9YPdf5Hf+D7ewM=" crossorigin=""></script>
-    
+    <!-- Map Card -->
     {% if zones_data %}
-    <script>
-        // Initialiser la carte
-        const map = L.map('map').setView([36.89186227222111, 10.187473488849253], 13);
+    <div class="card shadow-lg border-0 mb-4">
+        <div class="card-header {% get_role_bg user %} text-white">
+            <h2 class="h4 mb-0">
+                <i class="bi bi-geo-alt me-2"></i>Map View
+            </h2>
+        </div>
+        <div class="card-body p-4">
+            <div id="map"></div>
+        </div>
+    </div>
+    {% endif %}
 
-        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-            attribution: 'Leaflet Map ©'
-        }).addTo(map);
+    <!-- Actions -->
+    <div class="d-flex gap-3 justify-content-end mb-4">
+        <a href="{% url 'projects:project_list' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-2"></i>Back
+        </a>
+        {% if zones %}
+            <a href="{% url 'projects:add_zone' project.id %}" class="btn {% get_role_btn user %}">
+                <i class="bi bi-plus-circle me-2"></i>Add a Zone
+            </a>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
 
-        // Icône personnalisée pour les caméras
-        const cameraIcon = L.icon({
-            iconUrl: 'data:image/jpeg;base64,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',
-            iconSize: [32, 32],
-        });
+{% block extra_scripts %}
+<script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js" integrity="sha256-WBkoXOwTeyKclOHuWtc+i2uENFpDZ9YPdf5Hf+D7ewM=" crossorigin=""></script>
 
-        // Ajouter les zones et caméras
-        {% for zone_data in zones_data %}
-            {% if zone_data.coords_json != 'null' %}
+{% if zones_data %}
+<script>
+    // Initialize map
+    const map = L.map('map').setView([36.89186227222111, 10.187473488849253], 13);
+
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+        attribution: 'Leaflet Map ©'
+    }).addTo(map);
+
+    // Custom icon for cameras
+    const cameraIcon = L.icon({
+        iconUrl: 'data:image/jpeg;base64,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',
+        iconSize: [32, 32],
+    });
+
+    // Add zones and cameras
+    {% for zone_data in zones_data %}
+        {% if zone_data.coords_json != 'null' %}
+        (function() {
+            try {
+                const geojson = {{ zone_data.coords_json|safe }};
+                const polygonLayer = L.geoJSON(geojson, {
+                    style: {
+                        color: '#198754',
+                        weight: 3,
+                        fillColor: '#198754',
+                        fillOpacity: 0.2
+                    }
+                }).addTo(map);
+                
+                const tooltipContent = `<strong>{{ zone_data.zone.name_zone|escapejs }}</strong><br>{{ zone_data.zone.description_zone|default:""|escapejs }}`;
+                polygonLayer.bindTooltip(tooltipContent, { permanent: false, direction: 'center' });
+                
+                if (polygonLayer.getBounds().isValid()) {
+                    map.fitBounds(polygonLayer.getBounds(), { padding: [50, 50] });
+                }
+            } catch(e) {
+                console.error('Error loading zone:', e);
+            }
+        })();
+        {% endif %}
+
+        {% for cam_data in zone_data.cameras_data %}
+            {% if cam_data.coords_json != 'null' %}
             (function() {
                 try {
-                    const geojson = {{ zone_data.coords_json|safe }};
-                    const polygonLayer = L.geoJSON(geojson, {
-                        style: {
-                            color: '#667eea',
-                            weight: 3,
-                            fillColor: '#667eea',
-                            fillOpacity: 0.2
+                    const geojson = {{ cam_data.coords_json|safe }};
+                    const marker = L.geoJSON(geojson, {
+                        pointToLayer: function (feature, latlng) {
+                            return L.marker(latlng, { icon: cameraIcon });
                         }
                     }).addTo(map);
                     
-                    const tooltipContent = `<strong>{{ zone_data.zone.name_zone|escapejs }}</strong><br>{{ zone_data.zone.description_zone|default:""|escapejs }}`;
-                    polygonLayer.bindTooltip(tooltipContent, { permanent: false, direction: 'center' });
-                    
-                    // Ajuster la vue pour inclure toutes les zones
-                    if (polygonLayer.getBounds().isValid()) {
-                        map.fitBounds(polygonLayer.getBounds(), { padding: [50, 50] });
-                    }
+                    const popupContent = `
+                        <strong>{{ cam_data.cam.name_cam|escapejs }}</strong><br>
+                        {% if cam_data.cam.description_cam %}{{ cam_data.cam.description_cam|escapejs }}<br>{% endif %}
+                        {% if cam_data.cam.adresse_cam %}
+                            <i class="bi bi-router"></i> {{ cam_data.cam.adresse_cam }}
+                            {% if cam_data.cam.num_port %}:{{ cam_data.cam.num_port }}{% endif %}
+                        {% endif %}
+                    `;
+                    marker.bindPopup(popupContent);
                 } catch(e) {
-                    console.error('Error loading zone:', e);
+                    console.error('Error loading camera:', e);
                 }
             })();
             {% endif %}
-
-            // Ajouter les caméras de cette zone
-            {% for cam_data in zone_data.cameras_data %}
-                {% if cam_data.coords_json != 'null' %}
-                (function() {
-                    try {
-                        const geojson = {{ cam_data.coords_json|safe }};
-                        const marker = L.geoJSON(geojson, {
-                            pointToLayer: function (feature, latlng) {
-                                return L.marker(latlng, { icon: cameraIcon });
-                            }
-                        }).addTo(map);
-                        
-                        const popupContent = `
-                            <strong>{{ cam_data.cam.name_cam|escapejs }}</strong><br>
-                            {% if cam_data.cam.description_cam %}{{ cam_data.cam.description_cam|escapejs }}<br>{% endif %}
-                            {% if cam_data.cam.adresse_cam %}
-                                <i class="bi bi-router"></i> {{ cam_data.cam.adresse_cam }}
-                                {% if cam_data.cam.num_port %}:{{ cam_data.cam.num_port }}{% endif %}
-                            {% endif %}
-                        `;
-                        marker.bindPopup(popupContent);
-                    } catch(e) {
-                        console.error('Error loading camera:', e);
-                    }
-                })();
-                {% endif %}
-            {% endfor %}
         {% endfor %}
-    </script>
-    {% endif %}
-</body>
-</html>
-
+    {% endfor %}
+</script>
+{% endif %}
+{% endblock %}
