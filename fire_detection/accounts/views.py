@@ -151,6 +151,15 @@ def manage_users(request):
         users = users.filter(Q(email__icontains=search) | Q(user_type__icontains=search))
     users = users.order_by(sort)
 
+    # Statistics
+    all_users = User.objects.all()
+    total_users = all_users.count()
+    active_users = all_users.filter(is_active=True).count()
+    inactive_users = all_users.filter(is_active=False).count()
+    admin_count = all_users.filter(user_type=User.USER_TYPE_ADMIN).count()
+    supervisor_count = all_users.filter(user_type=User.USER_TYPE_SUPERVISOR).count()
+    agent_count = all_users.filter(user_type=User.USER_TYPE_AGENT).count()
+
     # Edit form: if ?edit=<user_id> in GET, show edit form for that user
     edit_user = None
     if 'edit' in request.GET:
@@ -165,6 +174,12 @@ def manage_users(request):
         'search': search,
         'edit_user': edit_user,
         'user_type_choices': User.USER_TYPE_CHOICES,
+        'total_users': total_users,
+        'active_users': active_users,
+        'inactive_users': inactive_users,
+        'admin_count': admin_count,
+        'supervisor_count': supervisor_count,
+        'agent_count': agent_count,
     })
 
 
@@ -172,6 +187,11 @@ class ProjectForm(forms.ModelForm):
     class Meta:
         model = Project
         fields = ['name', 'description', 'status']
+        widgets = {
+            'name': forms.TextInput(attrs={'class': 'form-control'}),
+            'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 1}),
+            'status': forms.Select(attrs={'class': 'form-select'}),
+        }
 
 
 @require_http_methods(['GET', 'POST'])
@@ -218,6 +238,12 @@ def manage_projects(request):
         projects = projects.filter(name__icontains=search)
     projects = projects.order_by(sort)
 
+    # Statistics
+    all_projects = Project.objects.all()
+    total_projects = all_projects.count()
+    active_projects = all_projects.filter(status=Project.STATUS_ACTIVE).count()
+    inactive_projects = all_projects.filter(status=Project.STATUS_INACTIVE).count()
+
     # Edit form: if ?edit=<project_id> in GET, show edit form for that project
     edit_project = None
     if 'edit' in request.GET:
@@ -238,4 +264,7 @@ def manage_projects(request):
         'search': search,
         'edit_project': edit_project,
         'form': form,
+        'total_projects': total_projects,
+        'active_projects': active_projects,
+        'inactive_projects': inactive_projects,
     })
