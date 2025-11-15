@@ -2,6 +2,11 @@ from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.http import HttpResponseForbidden
+from django.core.mail import send_mail
+from django.utils.http import urlsafe_base64_encode
+from django.utils.encoding import force_bytes
+from django.contrib.auth.tokens import default_token_generator
+from django.conf import settings
 from .forms import AgentCreationForm, AgentProfileForm
 from accounts.models import CustomUser
 
@@ -16,15 +21,79 @@ def add_agent(request):
         profile_form = AgentProfileForm(request.POST)
         
         if user_form.is_valid() and profile_form.is_valid():
-            # Sauvegarder l'utilisateur agent
+            # Create agent user as inactive
             agent_user = user_form.save()
+            agent_user.is_active = False
+            agent_user.save()
             
-            # Sauvegarder le profil agent (sans commit pour lier l'user)
+            # Save agent profile
             agent_profile = profile_form.save(commit=False)
-            agent_profile.user = agent_user  # Lier le profil à l'utilisateur
-            agent_profile.save()  # Maintenant sauvegarder
+            agent_profile.user = agent_user
+            agent_profile.save()
             
-            messages.success(request, f'Agent {agent_user.email} created successfully!')
+            # Generate activation link
+            uid = urlsafe_base64_encode(force_bytes(agent_user.pk))
+            token = default_token_generator.make_token(agent_user)
+            activate_url = request.build_absolute_uri(f"/accounts/activate/{uid}/{token}/")
+            
+            # Get generated password from form
+            generated_password = user_form.generated_password
+            
+            # Send activation email
+            subject = 'Your Fire Detection System Agent Account'
+            message = f'''Hello {agent_user.get_full_name() or agent_user.email},
+
+Your agent account has been created for the Fire Detection System.
+
+Account Details:
+- Email: {agent_user.email}
+- Password: {generated_password}
+
+Please activate your account by clicking the link below:
+{activate_url}
+
+After activation, you can log in using the email and password provided above.
+
+Best regards,
+Fire Detection System Team'''
+            
+            # Debug: Print email configuration before sending
+            print(f"\n=== Email Configuration Debug ===")
+            print(f"EMAIL_BACKEND: {settings.EMAIL_BACKEND}")
+            print(f"EMAIL_HOST: {settings.EMAIL_HOST}")
+            print(f"EMAIL_PORT: {settings.EMAIL_PORT}")
+            print(f"EMAIL_USE_TLS: {settings.EMAIL_USE_TLS}")
+            print(f"EMAIL_USE_SSL: {settings.EMAIL_USE_SSL}")
+            print(f"EMAIL_HOST_USER: {settings.EMAIL_HOST_USER}")
+            print(f"DEFAULT_FROM_EMAIL: {settings.DEFAULT_FROM_EMAIL}")
+            print(f"Recipient: {agent_user.email}")
+            print(f"================================\n")
+            
+            try:
+                # Use get_connection to ensure we're using the correct backend
+                from django.core.mail import get_connection
+                connection = get_connection()
+                print(f"Using connection: {connection}")
+                
+                send_mail(
+                    subject=subject,
+                    message=message,
+                    from_email=settings.DEFAULT_FROM_EMAIL,
+                    recipient_list=[agent_user.email],
+                    fail_silently=False,
+                    connection=connection,
+                )
+                messages.success(request, f'Agent {agent_user.email} created successfully! An activation email has been sent.')
+            except Exception as e:
+                # Log the full error for debugging
+                import traceback
+                error_details = traceback.format_exc()
+                print(f"\n=== Email sending error ===")
+                print(f"Error: {str(e)}")
+                print(f"Full traceback:\n{error_details}")
+                print(f"===========================\n")
+                messages.error(request, f'Agent {agent_user.email} created, but failed to send activation email. Error: {str(e)}. Please check server console for details.')
+            
             return redirect('supervisor_dashboard')
     
     else:

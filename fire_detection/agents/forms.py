@@ -1,27 +1,24 @@
 # agents/forms.py
 from django import forms
+from django.utils.crypto import get_random_string
 from accounts.models import CustomUser
 from .models import AgentProfile
 
 class AgentCreationForm(forms.ModelForm):
-    password1 = forms.CharField(widget=forms.PasswordInput, label="Password")
-    password2 = forms.CharField(widget=forms.PasswordInput, label="Confirm Password")
+    """Form for creating agent accounts with auto-generated passwords."""
     
     class Meta:
         model = CustomUser
         fields = ['email', 'first_name', 'last_name']
     
-    def clean_password2(self):
-        password1 = self.cleaned_data.get("password1")
-        password2 = self.cleaned_data.get("password2")
-        if password1 and password2 and password1 != password2:
-            raise forms.ValidationError("Passwords don't match")
-        return password2
-    
     def save(self, commit=True):
         user = super().save(commit=False)
         user.user_type = CustomUser.USER_TYPE_AGENT
-        user.set_password(self.cleaned_data["password1"])
+        # Generate a secure random password (12 characters with letters, digits, and special chars)
+        generated_password = get_random_string(length=12, allowed_chars='abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*')
+        user.set_password(generated_password)
+        # Store the generated password in the form instance for email sending
+        self.generated_password = generated_password
         
         if commit:
             user.save()
