@@ -4,7 +4,7 @@ from agents.models import AgentProfile
 
 class ProjectCreationForm(forms.ModelForm):
     assigned_agents = forms.ModelMultipleChoiceField(
-        queryset=AgentProfile.objects.filter(is_active=True),
+        queryset=AgentProfile.objects.none(),
         widget=forms.CheckboxSelectMultiple,
         required=False,
         label="Assign to Agents"
@@ -28,6 +28,7 @@ class ProjectCreationForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         self.supervisor = kwargs.pop('supervisor', None)
         super().__init__(*args, **kwargs)
+        self.fields['assigned_agents'].queryset = AgentProfile.objects.filter(is_active=True)
     
     def save(self, commit=True):
         project = super().save(commit=False)

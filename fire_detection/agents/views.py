@@ -9,6 +9,7 @@ from django.contrib.auth.tokens import default_token_generator
 from django.conf import settings
 from .forms import AgentCreationForm, AgentProfileForm
 from accounts.models import CustomUser
+from projects.models import *
 
 # agents/views.py
 @login_required
@@ -43,19 +44,19 @@ def add_agent(request):
             subject = 'Your Fire Detection System Agent Account'
             message = f'''Hello {agent_user.get_full_name() or agent_user.email},
 
-Your agent account has been created for the Fire Detection System.
+            Your agent account has been created for the Fire Detection System.
 
-Account Details:
-- Email: {agent_user.email}
-- Password: {generated_password}
+            Account Details:
+            - Email: {agent_user.email}
+            - Password: {generated_password}
 
-Please activate your account by clicking the link below:
-{activate_url}
+            Please activate your account by clicking the link below:
+            {activate_url}
 
-After activation, you can log in using the email and password provided above.
+            After activation, you can log in using the email and password provided above.
 
-Best regards,
-Fire Detection System Team'''
+            Best regards,
+            Fire Detection System Team'''
             
             # Debug: Print email configuration before sending
             print(f"\n=== Email Configuration Debug ===")
@@ -105,7 +106,6 @@ Fire Detection System Team'''
         'profile_form': profile_form
     })
 
-
 @login_required
 def agent_list(request):
     # Vérifier que l'utilisateur est un superviseur
@@ -132,3 +132,86 @@ def agent_list(request):
     }
     
     return render(request, 'agents/agent_list.html', context)
+
+# agents/views.py
+
+import logging
+from django.shortcuts import render, get_object_or_404
+from django.contrib.auth.decorators import login_required
+from django.http import HttpResponseForbidden, HttpResponseBadRequest, StreamingHttpResponse
+from django.views.decorators import gzip
+from accounts.models import CustomUser
+from projects.models import Cam, Zone
+from .camera_utils import VideoCamera, gen
+
+logger = logging.getLogger(__name__)
+
+@login_required
+def stream_superviseur(request, zone_id):
+    """
+    Affiche les flux vidéo de toutes les caméras dans une zone spécifique.
+    """
+    # Vérification que l'utilisateur est un agent
+    if request.user.user_type != CustomUser.USER_TYPE_AGENT:
+        return HttpResponseForbidden("Accès refusé: Vous n'avez pas les permissions nécessaires.")
+
+    # Récupération de la zone et des caméras associées
+    try:
+        zone = Zone.objects.get(Zone_ID=zone_id)
+        cameras = Cam.objects.filter(name_zone=zone)
+    except Zone.DoesNotExist:
+        logger.error(f"La zone avec l'ID {zone_id} n'existe pas.")
+        return HttpResponseBadRequest("Zone non trouvée.")
+
+    # Le template peut accéder directement aux attributs des objets 'cam' (cam.cam_ID, cam.name_cam, etc.)
+    return render(request, 'agents/stream_superviseur.html', {
+        'cameras': cameras,
+        'zone_id': zone_id,
+    })
+
+@gzip.gzip_page
+def video_feed(request, cam_id):
+    """
+    Vue pour le flux vidéo en streaming depuis une caméra spécifique.
+    Utilise la compression Gzip pour réduire la bande passante.
+    """
+    try:
+        # CORRECTION: Utiliser 'cam_ID' au lieu de 'id' pour correspondre au modèle
+        cam = get_object_or_404(Cam, cam_ID=cam_id)
+        
+        logger.info(f"[VIDEO_FEED] Demande de stream pour la caméra: {cam.name_cam} (ID: {cam_id})")
+
+        # Construction de l'URL RTSP
+        if hasattr(cam, 'is_full_rtsp_url') and cam.is_full_rtsp_url and cam.custom_url:
+            rtsp_url = cam.custom_url
+        elif cam.adresse_cam and cam.num_port:
+            rest_path = getattr(cam, 'rest_de_path', '') or ''
+            rtsp_url = f"rtsp://{cam.adresse_cam}:{cam.num_port}{rest_path}"
+        else:
+            logger.error(f"[VIDEO_FEED] Configuration invalide pour la caméra ID: {cam_id}")
+            return HttpResponseBadRequest("Configuration de la caméra invalide.")
+
+        cam_name = cam.name_cam or f"Camera_{cam.cam_ID}"
+        logger.info(f"[VIDEO_FEED] URL RTSP construite: {rtsp_url}")
+
+        # Création de l'instance de la caméra et du générateur de flux
+        camera = VideoCamera(rtsp_url, cam_name)
+        
+        # Retourner la réponse de streaming
+        response = StreamingHttpResponse(
+            gen(camera),
+            content_type='multipart/x-mixed-replace; boundary=frame'
+        )
+        
+        # Headers pour éviter la mise en côté du navigateur
+        response['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+        response['Pragma'] = 'no-cache'
+        response['Expires'] = '0'
+        response['X-Accel-Buffering'] = 'no'  # Désactive le buffering pour Nginx
+        
+        logger.info(f"[VIDEO_FEED] Streaming démarré pour la caméra: {cam_name}")
+        return response
+
+    except Exception as e:
+        logger.error(f'[VIDEO_FEED] Erreur inattendue pour la caméra ID={cam_id}: {e}', exc_info=True)
+        return HttpResponseBadRequest(f"Une erreur est survenue: {e}")

@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load role_colors %}
+{% load json_filters %}
 
 {% block title %}Agent Dashboard - Fire Detection System{% endblock %}
 
@@ -12,34 +13,323 @@
             <i class="bi bi-speedometer2"></i> Dashboard
         </a>
     </li>
-    <li class="nav-item">
-        <a class="nav-link" href="{% url 'projects:project_list' %}">
-            <i class="bi bi-folder"></i> My Projects
-        </a>
-    </li>
 </ul>
 {% endblock %}
 
+{% block extra_head %}
+<!-- Leaflet CSS -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" integrity="sha256-kLaT2GOSpHechhsozzB+flnD+zUyjE2LlfWPgU04xyI=" crossorigin="">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css">
+
+<style>
+    #map {
+        height: 600px;
+        width: 100%;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    .stats-card {
+        transition: transform 0.2s;
+    }
+    
+    .stats-card:hover {
+        transform: translateY(-5px);
+    }
+    
+    .filter-section {
+        background: #f8f9fa;
+        padding: 20px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+    }
+    
+    .zone-popup {
+        min-width: 250px;
+    }
+    
+    .zone-popup h6 {
+        margin-bottom: 10px;
+        color: #333;
+        font-weight: 600;
+    }
+    
+    .zone-popup .info-row {
+        display: flex;
+        align-items: center;
+        margin-bottom: 8px;
+    }
+    
+    .zone-popup .info-row i {
+        margin-right: 8px;
+        color: #6c757d;
+    }
+    
+    .leaflet-popup-content {
+        margin: 15px;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="container">
-    <div class="row">
+<div class="container-fluid px-4">
+    <!-- Header Section -->
+    <div class="row mb-4">
         <div class="col-12">
-            <div class="card shadow-lg border-0 mb-4">
-                <div class="card-body p-4">
-                    <h2 class="card-title mb-3">
-                        <i class="bi bi-person-badge text-warning"></i> Agent Dashboard
-                    </h2>
-                    <div class="alert alert-warning">
-                        <i class="bi bi-info-circle"></i> Welcome back, you're logged in as an agent.
+            <h2 class="mb-3">
+                <i class="bi bi-person-badge text-primary"></i> Agent Dashboard
+            </h2>
+        </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card stats-card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-muted mb-1">Total Projects</h6>
+                            <h3 class="mb-0">{{ projects.count }}</h3>
+                        </div>
+                        <div class="bg-primary bg-opacity-10 p-3 rounded">
+                            <i class="bi bi-folder text-primary fs-2"></i>
+                        </div>
                     </div>
-                    <div class="d-flex gap-3 flex-wrap">
-                        <a href="{% url 'projects:project_list' %}" class="btn btn-warning btn-lg text-dark">
-                            <i class="bi bi-folder"></i> View My Projects
-                        </a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card stats-card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-muted mb-1">Total Zones</h6>
+                            <h3 class="mb-0">{{ total_zones }}</h3>
+                        </div>
+                        <div class="bg-success bg-opacity-10 p-3 rounded">
+                            <i class="bi bi-geo-alt text-success fs-2"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card stats-card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-muted mb-1">Total Cameras</h6>
+                            <h3 class="mb-0">{{ total_cameras }}</h3>
+                        </div>
+                        <div class="bg-warning bg-opacity-10 p-3 rounded">
+                            <i class="bi bi-camera-video text-warning fs-2"></i>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
+
+    <!-- Filter Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="filter-section">
+                <div class="row align-items-center">
+                    <div class="col-md-6">
+                        <label for="projectFilter" class="form-label fw-semibold mb-2">
+                            <i class="bi bi-funnel"></i> Filter by Project
+                        </label>
+                        <select id="projectFilter" class="form-select">
+                            <option value="all">All Projects</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold mb-2">
+                            <i class="bi bi-info-circle"></i> Map Legend
+                        </label>
+                        <div class="d-flex gap-3">
+                            <span class="badge bg-primary">
+                                <i class="bi bi-geo-alt-fill"></i> Zone Boundaries
+                            </span>
+                            <span class="badge bg-success">
+                                <i class="bi bi-camera-video-fill"></i> With Cameras
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Map Section -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white py-3">
+                    <h5 class="mb-0">
+                        <i class="bi bi-map"></i> Interactive Zone Map
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    <div id="map"></div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
+{% endblock %}
+
+{% block extra_scripts %}
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js" integrity="sha256-WBkoXOwTeyKclOHuWtc+i2uENFpDZ9YPdf5Hf+D7ewM=" crossorigin=""></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
+<script>
+    // Parse projects data from Django
+    let projectsData = [];
+    
+    try {
+        const rawData = '{{ projects_json|safe }}';
+        projectsData = JSON.parse(rawData);
+        console.log('✅ Projects data parsed successfully');
+    } catch (e) {
+        console.error('❌ Error parsing projects data:', e);
+        const mapDiv = document.getElementById('map');
+        mapDiv.innerHTML = `
+            <div class="alert alert-danger m-3">
+                <h5>❌ Erreur de chargement des données</h5>
+                <p>Impossible de charger les zones. Vérifiez la console du navigateur (F12).</p>
+            </div>
+        `;
+    }
+
+    // Initialize map
+    const map = L.map('map').setView([36.8065, 10.1815], 10);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors',
+        maxZoom: 19
+    }).addTo(map);
+
+    // Arrays to store layers and bounds
+    let zoneLayers = [];
+    let allZoneBounds = [];
+
+    // Color palette
+    const colors = ['#3388ff', '#ff6b6b', '#4ecdc4', '#45b7d1', '#f9ca24', '#6c5ce7', '#95e1d3', '#f38181'];
+
+    // Populate project filter
+    const projectFilter = document.getElementById('projectFilter');
+    projectsData.forEach((project, index) => {
+        const option = document.createElement('option');
+        option.value = project.id;
+        option.textContent = `${project.name} (${project.zone_count} zones)`;
+        projectFilter.appendChild(option);
+    });
+
+    // Function to create popup content
+    function createPopupContent(zone, project) {
+    const streamUrl = "{% url 'agents:stream_cam' 0 %}".replace('0', zone.id);
+
+    return `
+        <div class="zone-popup">
+            <h6><i class="bi bi-geo-alt-fill text-primary"></i> ${zone.name}</h6>
+            <div class="info-row"><i class="bi bi-folder"></i> <span><strong>Project:</strong> ${project.name}</span></div>
+            <div class="info-row"><i class="bi bi-camera-video"></i> <span><strong>Cameras:</strong> ${zone.camera_count}</span></div>
+            ${zone.description ? `<div class="info-row"><i class="bi bi-info-circle"></i> <span>${zone.description}</span></div>` : ''}
+            <hr class="my-2">
+            <a href="${streamUrl}" class="btn btn-primary btn-sm w-100">
+                <i class="bi bi-play-circle"></i> View Live Stream
+            </a>
+        </div>
+    `;
+}
+
+    // Helper: add a polygon (single ring) to map
+    function addPolygon(ringCoords, projectColor, zone, project) {
+        const latlngs = ringCoords.map(pt => [pt[1], pt[0]]); // [lat, lng]
+        const polygon = L.polygon(latlngs, {
+            color: projectColor,
+            fillColor: projectColor,
+            fillOpacity: 0.2,
+            weight: 2,
+            projectId: project.id
+        }).addTo(map);
+
+        polygon.bindPopup(createPopupContent(zone, project), { maxWidth: 300 });
+
+        polygon.on('mouseover', () => polygon.setStyle({ fillOpacity: 0.4, weight: 3 }));
+        polygon.on('mouseout', () => polygon.setStyle({ fillOpacity: 0.2, weight: 2 }));
+        polygon.on('click', () => polygon.openPopup());
+
+        zoneLayers.push({ layer: polygon, projectId: project.id, zoneName: zone.name });
+        allZoneBounds.push(polygon.getBounds());
+    }
+
+    // Add zones to map
+    let zonesAdded = 0;
+    let zonesSkipped = 0;
+
+    projectsData.forEach((project, projectIndex) => {
+        const projectColor = colors[projectIndex % colors.length];
+
+        project.zones.forEach(zone => {
+            if (!zone.coords || !zone.coords.type || !zone.coords.coordinates) {
+                console.warn(`⚠️ Zone skipped (invalid coords): ${zone.name}`);
+                zonesSkipped++;
+                return;
+            }
+
+            try {
+                if (zone.coords.type === 'Polygon') {
+                    // Polygon: single array of rings
+                    zone.coords.coordinates.forEach(ring => addPolygon(ring, projectColor, zone, project));
+                } else if (zone.coords.type === 'MultiPolygon') {
+                    // MultiPolygon: array of polygons
+                    zone.coords.coordinates.forEach(polygonCoords => {
+                        polygonCoords.forEach(ring => addPolygon(ring, projectColor, zone, project));
+                    });
+                } else {
+                    console.warn(`⚠️ Unsupported geometry type: ${zone.coords.type}`);
+                    zonesSkipped++;
+                }
+
+                zonesAdded++;
+            } catch (err) {
+                console.error(`❌ Error adding zone ${zone.name}:`, err);
+                zonesSkipped++;
+            }
+        });
+    });
+
+    console.log(`📊 Zones added: ${zonesAdded}, Zones skipped: ${zonesSkipped}`);
+
+    // Fit map to all zones
+    if (allZoneBounds.length > 0) {
+        const group = new L.featureGroup(zoneLayers.map(z => z.layer));
+        map.fitBounds(group.getBounds().pad(0.1));
+    }
+
+    // Filter by project
+    projectFilter.addEventListener('change', function() {
+        const selectedProject = this.value;
+
+        zoneLayers.forEach(item => {
+            if (selectedProject === 'all' || item.projectId == selectedProject) {
+                map.addLayer(item.layer);
+            } else {
+                map.removeLayer(item.layer);
+            }
+        });
+
+        const visibleLayers = zoneLayers
+            .filter(item => selectedProject === 'all' || item.projectId == selectedProject)
+            .map(item => item.layer);
+
+        if (visibleLayers.length > 0) {
+            const group = new L.featureGroup(visibleLayers);
+            map.fitBounds(group.getBounds().pad(0.1));
+        }
+    });
+</script>
+
 {% endblock %}

@@ -10,9 +10,11 @@ from django.db.models import Q
 from django.urls import reverse
 from .models import Project
 from django import forms
-
+from accounts.models import CustomUser
+from projects.models import *
 from .forms import LoginForm, RegisterForm
 from .decorators import role_required
+import json
 
 User = get_user_model()
 
@@ -37,7 +39,6 @@ def login_view(request):
             messages.error(request, 'Invalid email or password.')
     return render(request, 'accounts/login.html', {'form': form})
 
-
 @require_http_methods(['GET', 'POST'])
 @require_http_methods(['GET', 'POST'])
 def register_view(request):
@@ -58,7 +59,6 @@ def register_view(request):
         return redirect('login')
     return render(request, 'accounts/register.html', {'form': form})
 
-
 @require_http_methods(['GET'])
 def activate_view(request, uidb64, token):
     try:
@@ -74,14 +74,12 @@ def activate_view(request, uidb64, token):
     messages.error(request, 'Activation link invalid.')
     return redirect('register')
 
-
 @require_http_methods(['GET', 'POST'])
 def logout_view(request):
     if request.method == 'POST':
         logout(request)
         messages.success(request, 'You have been logged out successfully.')
     return redirect('login')
-
 
 @require_http_methods(['GET'])
 @role_required(User.USER_TYPE_ADMIN)
@@ -97,18 +95,10 @@ def admin_dashboard(request):
         return redirect('login')
     return render(request, 'accounts/dashboard_admin.html')
 
-
 @require_http_methods(['GET'])
 @role_required(User.USER_TYPE_SUPERVISOR)
 def supervisor_dashboard(request):
     return render(request, 'accounts/dashboard_supervisor.html')
-
-
-@require_http_methods(['GET'])
-@role_required(User.USER_TYPE_AGENT)
-def agent_dashboard(request):
-    return render(request, 'accounts/dashboard_agent.html')
-
 
 @require_http_methods(['GET', 'POST'])
 @role_required(User.USER_TYPE_ADMIN)
@@ -182,7 +172,6 @@ def manage_users(request):
         'agent_count': agent_count,
     })
 
-
 class ProjectForm(forms.ModelForm):
     class Meta:
         model = Project
@@ -192,7 +181,6 @@ class ProjectForm(forms.ModelForm):
             'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 1}),
             'status': forms.Select(attrs={'class': 'form-select'}),
         }
-
 
 @require_http_methods(['GET', 'POST'])
 @role_required(User.USER_TYPE_ADMIN)
@@ -267,4 +255,56 @@ def manage_projects(request):
         'total_projects': total_projects,
         'active_projects': active_projects,
         'inactive_projects': inactive_projects,
+    })
+
+@require_http_methods(['GET'])
+@role_required(CustomUser.USER_TYPE_AGENT)
+def agent_dashboard(request):
+    agent_profile = request.user.agentprofile
+
+    # Filtrage des projets / zones / caméras
+    projects = Project.objects.filter(assigned_agents=agent_profile)
+    zones = Zone.objects.filter(name_project__in=projects)
+    cameras = Cam.objects.filter(name_zone__in=zones)
+
+    # Totaux
+    total_projects = projects.count()
+    total_zones = zones.count()
+    total_cameras = cameras.count()
+
+    # Construction JSON hiérarchique pour la carte
+    projects_json = []
+
+    for project in projects:
+        project_zones = zones.filter(name_project=project)
+
+        zone_list = []
+        for zone in project_zones:
+            zone_cameras = cameras.filter(name_zone=zone)
+
+            zone_list.append({
+                "id": zone.Zone_ID,
+                "name": zone.name_zone,
+                "description": zone.description_zone,
+                "coords": zone.coords_polys if zone.coords_polys else [],
+                "camera_count": zone_cameras.count(),
+            })
+
+        projects_json.append({
+            "id": project.id,
+            "name": project.name,
+            "zone_count": project_zones.count(),
+            "zones": zone_list,
+        })
+
+    return render(request, 'accounts/dashboard_agent.html', {
+        "projects": projects,
+        "zones": zones,
+        "cameras": cameras,
+        "total_projects": total_projects,
+        "total_zones": total_zones,
+        "total_cameras": total_cameras,
+
+        # IMPORTANT
+        "projects_json": json.dumps(projects_json),
     })

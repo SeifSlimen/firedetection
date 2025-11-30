@@ -286,7 +286,6 @@ def project_list(request):
     
     return render(request, 'projects/project_list.html', {'projects': projects})
 
-
 @login_required
 def delete_project(request, project_id):
     """Delete a project and all its related zones and cameras."""
@@ -301,7 +300,6 @@ def delete_project(request, project_id):
         messages.success(request, f'Project "{project_name}" has been successfully deleted.')
     
     return redirect('projects:project_list')
-
 
 @login_required
 def project_detail(request, project_id):
